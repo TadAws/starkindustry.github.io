@@ -172,7 +172,7 @@
   }
 
   crystalsSpent += crystalPer10Pull;
-  history.push("Pull: " + pulls.map(p => p.name).join(", "));
+  history.push(`Pull ${history.length + 1}: ` + pulls.map(p => p.name).join(", "));
   updateUI();
 
   resultDiv.innerHTML = `<div class="grid">${pulls.map((item, i) => `
