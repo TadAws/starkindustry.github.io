@@ -63,6 +63,27 @@
       object-fit: cover;
       border-radius: 8px;
     }
+
+    .reforge-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 8px 15px;
+  background: linear-gradient(to right, #3a1c71, #d76d77, #ffaf7b);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  text-decoration: none;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.reforge-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
     .ctp-border {
   position: absolute;
   top: -3px;
@@ -130,9 +151,11 @@
     <div class="stat-box">CTPs: <span id="ctp-count">0</span></div>
   </div>
 
+  <a href="reforge.html" class="reforge-button">CTP Reforging</a>
   <div class="version-info">
-  Version 1.7<br>
+  Version 1.8<br>
   Made For Stark Industry
+  Added CTP Reforge
 </div>
   
   <button id="pull-button" onclick="pull(10)">Open 10x (675 Crystals)</button>
