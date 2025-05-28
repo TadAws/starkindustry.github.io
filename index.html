@@ -15,18 +15,22 @@
       margin: 10px;
       cursor: pointer;
     }
-    .grid {
+    .grid-container {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       gap: 10px;
       margin-top: 20px;
+    }
+    .card-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
     }
     .card {
       width: 120px;
       height: 160px;
       perspective: 1000px;
-      position: relative;
     }
     .inner {
       width: 100%;
@@ -58,15 +62,6 @@
       height: 100%;
       object-fit: cover;
       border-radius: 8px;
-    }
-    .quantity {
-      position: absolute;
-      bottom: 5px;
-      right: 5px;
-      background: rgba(0,0,0,0.7);
-      padding: 2px 6px;
-      border-radius: 10px;
-      font-weight: bold;
     }
     .ctp-glow {
       position: absolute;
@@ -133,7 +128,7 @@
   <div id="history"></div>
 
   <script>
-    const CRYSTAL_PER_PULL = 67.5; // Changed to 675 for 10x
+    const CRYSTAL_PER_PULL = 67.5;
     const PITY_MAX = 100;
     const crystalDisplay = document.getElementById("crystal-count");
     const pullDisplay = document.getElementById("pull-count");
@@ -163,10 +158,10 @@
       { name: "CTP Of Conquest", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_conquest.png" },
       { name: "CTP Of Liberation", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_liberation.png" },
       { name: "CTP Of Patience", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_patience.png" },
-      { name: "CTP Of Transcendence", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_transcendence.png" }
+      { name: "CTP Of Transcendence", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_transcendence.png" },
+      { name: "CTP Of Veteran", chance: 0.0005, img: "https://thanosvibs.money/static/assets/items/ctp_veteran.png" }
     ];
 
-    // Initialize state
     let state = {
       crystals: parseInt(localStorage.getItem("crystals")) || 0,
       totalPulls: parseInt(localStorage.getItem("totalPulls")) || 0,
@@ -178,7 +173,7 @@
     };
 
     function updateUI() {
-      crystalDisplay.textContent = Math.floor(state.crystals); // Show whole numbers
+      crystalDisplay.textContent = Math.floor(state.crystals);
       pullDisplay.textContent = state.totalPulls;
       pityDisplay.textContent = state.pityCount;
       ctpDisplay.textContent = state.ctpsObtained;
@@ -213,133 +208,120 @@
       return items[0];
     }
 
-    function groupItemsForDisplay(pulls) {
-      const grouped = {};
-      pulls.forEach(item => {
-        const key = item.name;
-        grouped[key] = grouped[key] || { ...item, quantity: 0 };
-        grouped[key].quantity++;
-      });
-      return Object.values(grouped);
-    }
-
-    function formatHistoryEntry(pulls) {
-      const grouped = {};
-      pulls.forEach(item => {
-        const key = item.name;
-        grouped[key] = grouped[key] || { ...item, quantity: 0 };
-        grouped[key].quantity++;
-      });
-      return Object.entries(grouped).map(([name, item]) => {
-        return item.quantity > 1 ? `${name} ×${item.quantity}` : name;
-      }).join(", ");
-    }
-
     function pull(count) {
-    if (state.isPulling && !state.allCardsRevealed) return;
-    
-    state.isPulling = true;
-    state.allCardsRevealed = false;
-    updateUI();
-    
-    let pulls = [];
-    let gotCTP = false;
+      if (state.isPulling && !state.allCardsRevealed) return;
+      
+      state.isPulling = true;
+      state.allCardsRevealed = false;
+      updateUI();
+      
+      let pulls = [];
+      let gotCTP = false;
+      let pullsSinceLastCTP = state.pityCount;
 
-    // Track pulls separately from pity counter
-    let pullsSinceLastCTP = state.pityCount;
-    
-    for (let i = 0; i < count; i++) {
+      for (let i = 0; i < count; i++) {
         state.totalPulls++;
         pullsSinceLastCTP++;
         
-        // Force CTP if reached pity (100 since last CTP)
         if (pullsSinceLastCTP >= PITY_MAX && !gotCTP) {
-            const ctpItem = items.find(item => item.name.includes("CTP"));
-            pulls.push(ctpItem);
-            state.ctpsObtained++;
-            gotCTP = true;
-            pullsSinceLastCTP = 0; // Reset counter
-            state.pityCount = 0; // Ensure UI shows 0
-            continue;
+          const ctpItem = items.find(item => item.name.includes("CTP"));
+          pulls.push(ctpItem);
+          state.ctpsObtained++;
+          gotCTP = true;
+          pullsSinceLastCTP = 0;
+          continue;
         }
         
-        // Regular pull
         const item = getRandomItem();
         pulls.push(item);
         
         if (item.name.includes("CTP")) {
-            state.ctpsObtained++;
-            gotCTP = true;
-            pullsSinceLastCTP = 0; // Reset counter
+          state.ctpsObtained++;
+          gotCTP = true;
+          pullsSinceLastCTP = 0;
         }
-    }
-    
-    // Update pity counter (only if no CTP was obtained)
-    if (!gotCTP) {
-        state.pityCount = pullsSinceLastCTP;
-    } else {
-        state.pityCount = 0; // Force 0 if any CTP was obtained
-    }
+      }
 
-    state.crystals += CRYSTAL_PER_PULL * count;
-    showResults(groupItemsForDisplay(pulls));
-    
-    // Update history
-    const pullRange = `Pulls ${state.totalPulls-count+1}-${state.totalPulls}`;
-    const pullResults = formatHistoryEntry(pulls);
-    state.history.push(`${pullRange}: ${pullResults}`);
-    
-    if (gotCTP) {
-        const ctpCount = pulls.filter(p => p.name.includes("CTP")).length;
-        state.history.push(`>>> Obtained ${ctpCount} CTP(s)!`);
-    }
-    
-    updateUI();
-}
-
-    function showResults(groupedPulls) {
+      state.pityCount = gotCTP ? 0 : pullsSinceLastCTP;
+      state.crystals += CRYSTAL_PER_PULL * count;
+      
+      // Create two rows of 5 cards each
+      const topRow = pulls.slice(0, 5);
+      const bottomRow = pulls.slice(5, 10);
+      
       resultDiv.innerHTML = `
-        <div class="grid">
-          ${groupedPulls.map((item, i) => `
-            <div class="card" id="card-${i}">
-              <div class="inner">
-                <div class="front"></div>
-                <div class="back">
-                  <img src="${item.img}" alt="${item.name}">
-                  ${item.quantity > 1 ? `<div class="quantity">x${item.quantity}</div>` : ''}
-                </div>
-              </div>
-              ${item.name.includes("CTP") ? '<div class="ctp-glow"></div>' : ''}
-            </div>
-          `).join("")}
+        <div class="grid-container">
+          <div class="card-row" id="top-row"></div>
+          <div class="card-row" id="bottom-row"></div>
         </div>
       `;
+      
+      // Add cards to rows
+      topRow.forEach((item, i) => {
+        document.getElementById("top-row").innerHTML += `
+          <div class="card" id="card-${i}">
+            <div class="inner">
+              <div class="front"></div>
+              <div class="back">
+                <img src="${item.img}" alt="${item.name}">
+              </div>
+            </div>
+            ${item.name.includes("CTP") ? '<div class="ctp-glow"></div>' : ''}
+          </div>
+        `;
+      });
+      
+      bottomRow.forEach((item, i) => {
+        document.getElementById("bottom-row").innerHTML += `
+          <div class="card" id="card-${i+5}">
+            <div class="inner">
+              <div class="front"></div>
+              <div class="back">
+                <img src="${item.img}" alt="${item.name}">
+              </div>
+            </div>
+            ${item.name.includes("CTP") ? '<div class="ctp-glow"></div>' : ''}
+          </div>
+        `;
+      });
 
       controlsDiv.innerHTML = `
         <button onclick="skipReveal()">Skip Reveal</button>
         <button onclick="closeResult()" id="close-btn">Close</button>
       `;
 
-      // Animate card flips
+      // Flip cards one by one with delay
       let currentCard = 0;
       const flipInterval = setInterval(() => {
         const card = document.getElementById(`card-${currentCard}`);
         if (card) {
           card.classList.add("flipped");
           const glow = card.querySelector('.ctp-glow');
-          if (glow) setTimeout(() => glow.style.display = 'block', 300);
+          if (glow) {
+            setTimeout(() => glow.style.display = 'block', 300);
+          }
         }
         currentCard++;
-        if (currentCard >= groupedPulls.length) {
+        if (currentCard >= pulls.length) {
           clearInterval(flipInterval);
           state.allCardsRevealed = true;
           updateUI();
         }
       }, 300);
+
+      // Update history
+      state.history.push(`Pulls ${state.totalPulls-count+1}-${state.totalPulls}: ${pulls.map(p => p.name).join(", ")}`);
+      if (gotCTP) {
+        const ctpCount = pulls.filter(p => p.name.includes("CTP")).length;
+        state.history.push(`>>> Obtained ${ctpCount} CTP(s)!`);
+      }
+      
+      updateUI();
     }
 
     function skipReveal() {
-      document.querySelectorAll('.card').forEach(card => {
+      const cards = document.querySelectorAll('.card');
+      cards.forEach(card => {
         if (!card.classList.contains("flipped")) {
           card.classList.add("flipped");
           const glow = card.querySelector('.ctp-glow');
@@ -376,7 +358,6 @@
       }
     }
 
-    // Initialize
     updateUI();
   </script>
 </body>
