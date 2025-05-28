@@ -232,43 +232,47 @@
   return items[0]; // Fallback
 }
 
-    function pull(count) {
-      recentCTPs = [];
-      if (state.isPulling && !state.allCardsRevealed) return;
-      
-      state.isPulling = true;
-      state.allCardsRevealed = false;
-      updateUI();
-      
-      let pulls = [];
-      let gotCTP = false;
-      let pullsSinceLastCTP = state.pityCount;
+   function pull(count) {
+  recentCTPs = [];
+  if (state.isPulling && !state.allCardsRevealed) return;
+  
+  state.isPulling = true;
+  state.allCardsRevealed = false;
+  updateUI();
+  
+  let pulls = [];
+  let gotCTP = false;
+  let pityCTP = false;
+  let pullsSinceLastCTP = state.pityCount;
 
-      for (let i = 0; i < count; i++) {
-        state.totalPulls++;
-        pullsSinceLastCTP++;
-        
-        if (pullsSinceLastCTP >= PITY_MAX && !gotCTP) {
-          const ctpItem = items.find(item => item.name.includes("CTP"));
-          pulls.push(ctpItem);
-          state.ctpsObtained++;
-          gotCTP = true;
-          pullsSinceLastCTP = 0;
-          continue;
-        }
-        
-        const item = getRandomItem();
-        pulls.push(item);
-        
-        if (item.name.includes("CTP")) {
-          state.ctpsObtained++;
-          gotCTP = true;
-          pullsSinceLastCTP = 0;
-        }
-      }
+  for (let i = 0; i < count; i++) {
+    state.totalPulls++;
+    pullsSinceLastCTP++;
+    
+    // Pity system check - THIS IS THE FIXED SECTION
+    if (pullsSinceLastCTP >= PITY_MAX && !gotCTP) {
+      const allCTPs = items.filter(item => item.name.includes("CTP"));
+      const randomCTP = allCTPs[Math.floor(Math.random() * allCTPs.length)];
+      pulls.push(randomCTP);
+      state.ctpsObtained++;
+      gotCTP = true;
+      pityCTP = true;
+      pullsSinceLastCTP = 0;
+      continue;
+    }
+    
+    const item = getRandomItem();
+    pulls.push(item);
+    
+    if (item.name.includes("CTP")) {
+      state.ctpsObtained++;
+      gotCTP = true;
+      pullsSinceLastCTP = 0;
+    }
+  }
 
-      state.pityCount = gotCTP ? 0 : pullsSinceLastCTP;
-      state.crystals += CRYSTAL_PER_PULL * count;
+  state.pityCount = gotCTP ? 0 : pullsSinceLastCTP;
+  state.crystals += CRYSTAL_PER_PULL * count;
       
       // Create two rows of 5 cards each
       const topRow = pulls.slice(0, 5);
