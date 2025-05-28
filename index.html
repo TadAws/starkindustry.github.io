@@ -138,14 +138,16 @@
     const historyDiv = document.getElementById("history");
     const controlsDiv = document.getElementById("controls");
     const pullButton = document.getElementById("pull-button");
+    let recentCTPs = [];
+    const MAX_RECENT_CTPS = 2; // How many unique CTPs to remember (2-3 works best)
 
     const items = [
-      { name: "1★ Obelisk", chance: 59.5, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043680828850206/Screenshot_20250528_005633_Future_Fight.jpg?ex=6837875d&is=683635dd&hm=6c952222f0c39daaf1f4fcd4d6772ac7f5c9563b6d974f0c2786e55fa1b1715f&=&format=webp" },
-      { name: "2★ Obelisk", chance: 30, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043518991630376/Screenshot_20250528_005705_Future_Fight.jpg?ex=68378737&is=683635b7&hm=4373707acc96f80beeeaf8b54e97344ca694459c092e063b93934edd7a219ee1&=&format=webp" },
-      { name: "3★ Obelisk", chance: 5, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043519247749231/Screenshot_20250528_005707_Future_Fight.jpg?ex=68378737&is=683635b7&hm=dcadcd91702de0c2099857d926c8d0adcafceb320f2870456c1395cf2afac3ff&=&format=webp" },
-      { name: "4★ Obelisk", chance: 2.5, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043519524307004/Screenshot_20250528_005709_Future_Fight.jpg?ex=68378737&is=683635b7&hm=f6ddb908e64b2a47c5d3a4a5d6ce0488d29a972a7ee536dc6bdbbfef58d6a664&=&format=webp" },
-      { name: "5★ Obelisk", chance: 1.25, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043519725768816/Screenshot_20250528_005710_Future_Fight.jpg?ex=68378737&is=683635b7&hm=a6b5f4011f9809818743315a542943227318f79713db0d1a93a06a00d500dde8&=&format=webp" },
-      { name: "6★ Obelisk", chance: 0.25, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043519939674184/Screenshot_20250528_005712_Future_Fight.jpg?ex=68378737&is=683635b7&hm=3f76132a0bdbc643e115b6e8d35e00b514e08e6a2640ecf5c320a88fdb145098&=&format=webp" },
+      { name: "1★ Obelisk", chance: 59.5, img: "https://media.discordapp.net/attachments/1375554664795213910/1377301602591047770/Screenshot_20250528_005633_Future_Fight-removebg-preview.png?ex=68387793&is=68372613&hm=edbb8b5b03f8fe2a5474abe90dbd13ac8158c8eee26f5ebfaab4302c66105bc2&=&format=webp&quality=lossless" },
+      { name: "2★ Obelisk", chance: 30, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300490877927544/image_2025-05-28_202918363.png?ex=6838768a&is=6837250a&hm=98cd9aaa7eb57706b291eff19eded0aa5df59449a062396dc4db1d633faa879d&=&format=webp&quality=lossless" },
+      { name: "3★ Obelisk", chance: 5, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300491133784165/image_2025-05-28_202937443.png?ex=6838768a&is=6837250a&hm=97ba2e86da28a0c24d170fb90497945760ab558226ef570a06f665228898a140&=&format=webp&quality=lossless" },
+      { name: "4★ Obelisk", chance: 2.5, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300491418992722/image_2025-05-28_202943180.png?ex=6838768a&is=6837250a&hm=5863f44180ec2944fa0ae01f99114723910055cc7f0746e50e51b949c2b0d465&=&format=webp&quality=lossless" },
+      { name: "5★ Obelisk", chance: 1.25, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300491658199061/image_2025-05-28_202955228.png?ex=6838768a&is=6837250a&hm=c0be6b08fe0347008ee296490aaf342d72944fece676425132aa3509076e1881&=&format=webp&quality=lossless" },
+      { name: "6★ Obelisk", chance: 0.25, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300491914186812/image_2025-05-28_203002058.png?ex=6838768a&is=6837250a&hm=229d230842eecca9500262ef30d58c3c9951e1518b7d803f64ee15059794a419&=&format=webp&quality=lossless" },
       { name: "CTP Of Authority", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_authority.png" },
       { name: "CTP Of Energy", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_energy.png" },
       { name: "CTP Of Destruction", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_destruction.png" },
@@ -199,16 +201,37 @@
     }
 
     function getRandomItem() {
-      const rand = Math.random() * 100;
-      let sum = 0;
-      for (const item of items) {
-        sum += item.chance;
-        if (rand <= sum) return item;
+  // Filter out recently dropped CTPs
+  let eligibleItems = items.filter(item => {
+    if (!item.name.includes("CTP")) return true;
+    return !recentCTPs.includes(item.name);
+  });
+  
+  // If all CTPs are in recent memory, allow any
+  if (eligibleItems.length === 0) eligibleItems = [...items];
+
+  // Standard probability calculation
+  const rand = Math.random() * 100;
+  let sum = 0;
+  
+  for (const item of eligibleItems) {
+    sum += item.chance;
+    if (rand <= sum) {
+      // Track CTP drops
+      if (item.name.includes("CTP")) {
+        recentCTPs.push(item.name);
+        if (recentCTPs.length > MAX_RECENT_CTPS) {
+          recentCTPs.shift(); // Remove oldest entry
+        }
       }
-      return items[0];
+      return item;
     }
+  }
+  return items[0]; // Fallback
+}
 
     function pull(count) {
+      recentCTPs = [];
       if (state.isPulling && !state.allCardsRevealed) return;
       
       state.isPulling = true;
@@ -310,7 +333,7 @@
       }, 300);
 
       // Update history
-      state.history.push(`Pulls ${state.totalPulls-count+1}-${state.totalPulls}: ${pulls.map(p => p.name).join(", ")}`);
+      state.history.push(`Pulls ${state.totalPulls-count+1}-${state.totalPulls}: ${formatHistoryEntry(pulls)}`);
       if (gotCTP) {
         const ctpCount = pulls.filter(p => p.name.includes("CTP")).length;
         state.history.push(`>>> Obtained ${ctpCount} CTP(s)!`);
@@ -318,6 +341,16 @@
       
       updateUI();
     }
+
+function formatHistoryEntry(pulls) {
+  const grouped = {};
+  pulls.forEach(item => {
+    grouped[item.name] = (grouped[item.name] || 0) + 1;
+  });
+  return Object.entries(grouped).map(([name, count]) => 
+    count > 1 ? `${name} ×${count}` : name
+  ).join(", ");
+}
 
     function skipReveal() {
       const cards = document.querySelectorAll('.card');
