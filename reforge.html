@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CTP Reforging Simulator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #111;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: gold;
+      margin-bottom: 30px;
+    }
+    
+    .back-button {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 8px 15px;
+      background: linear-gradient(to right, #3a1c71, #d76d77, #ffaf7b);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    
+    .currency-display {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 15px;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    
+    .currency-display span {
+      color: gold;
+      font-weight: bold;
+    }
+    
+    .ctp-selector {
+      margin: 20px 0;
+    }
+    
+    .ctp-options {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .ctp-option {
+      display: inline-block;
+      margin: 5px;
+      cursor: grab;
+      transition: all 0.3s;
+    }
+    
+    .ctp-option.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+    
+    .ctp-option img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border: 2px solid transparent;
+      border-radius: 8px;
+    }
+    
+    .ctp-option.selected img {
+      border-color: gold;
+      box-shadow: 0 0 15px gold;
+    }
+    
+    .ctp-option span {
+      display: block;
+      margin-top: 5px;
+      font-size: 12px;
+    }
+    
+    .reforge-slots {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 30px 0;
+      gap: 15px;
+    }
+    
+    .slot {
+      width: 80px;
+      height: 80px;
+      border: 2px dashed #444;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      position: relative;
+    }
+    
+    .slot.highlight {
+      border-color: gold;
+      background: rgba(255, 215, 0, 0.1);
+    }
+    
+    .slot.filled {
+      border: 2px solid #666;
+    }
+    
+    .slot img {
+      max-width: 90%;
+      max-height: 90%;
+    }
+    
+    .slot.fixed {
+      background: rgba(0,0,0,0.3);
+    }
+    
+    .slot.fixed::after {
+      content: "Base";
+      position: absolute;
+      bottom: -20px;
+      font-size: 12px;
+      color: #aaa;
+    }
+    
+    .chance-display {
+      margin: 15px 0;
+      font-size: 18px;
+    }
+    
+    .cost-display {
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    
+    .cost-display span {
+      color: gold;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #333;
+      border-radius: 10px;
+      margin: 15px 0;
+      overflow: hidden;
+    }
+    
+    .progress {
+      height: 100%;
+      background: linear-gradient(to right, #d76d77, #ffaf7b);
+      width: 0%;
+      transition: width 1s;
+    }
+    
+    .reforge-button {
+      padding: 12px 25px;
+      background: linear-gradient(to right, #3a1c71, #d76d77, #ffaf7b);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 20px 0;
+      transition: all 0.3s;
+    }
+    
+    .reforge-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    .reforge-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #666;
+    }
+    
+    .results {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.3);
+      display: none;
+    }
+    
+    .success {
+      color: gold;
+      font-size: 24px;
+      margin-bottom: 15px;
+    }
+    
+    .brilliant {
+      color: #ffcc00;
+      text-shadow: 0 0 10px #ffcc00;
+    }
+    
+    .mighty {
+      color: #00ccff;
+      text-shadow: 0 0 10px #00ccff;
+    }
+    
+    .reset-timer {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #aaa;
+    }
+    
+    .clear-slots {
+      padding: 8px 15px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    .history {
+      margin-top: 30px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 10px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      position: relative;
+    }
+    
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .clear-history {
+      background: #ff4444;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    
+    .history-item {
+      padding: 8px;
+      border-bottom: 1px solid #333;
+    }
+    
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    
+    .brilliant-item {
+      color: #ffcc00;
+    }
+    
+    .mighty-item {
+      color: #00ccff;
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-button">← Back</a>
+  <div class="currency-display">Total Cores Spent: <span id="total-cores">0</span></div>
+  
+  <div class="container">
+    <h1>CTP Reforging Simulator</h1>
+    
+    <div class="ctp-selector">
+      <h3>Drag CTPs to Reforge Slots:</h3>
+      <div class="ctp-options" id="ctp-options">
+        <!-- Options will be added by JavaScript -->
+      </div>
+    </div>
+    
+    <div class="reforge-slots">
+      <div class="slot fixed" id="slot-0"></div>
+      <div class="slot" id="slot-1"></div>
+      <div class="slot" id="slot-2"></div>
+      <div class="slot" id="slot-3"></div>
+      <div class="slot" id="slot-4"></div>
+      <div class="slot" id="slot-5"></div>
+    </div>
+    
+    <button class="clear-slots" id="clear-slots">Clear Additional Slots</button>
+    
+    <div class="chance-display">
+      Brilliant Chance: <span id="chance">0%</span>
+    </div>
+    
+    <div class="cost-display">
+      Reforge Cost: <span id="cost">0</span> CTP Reforging Cores
+    </div>
+    
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+    
+    <button class="reforge-button" id="reforge-btn" disabled>Reforge</button>
+    
+    <div class="results" id="results">
+      <div class="success" id="result-text"></div>
+      <div id="result-details"></div>
+      <div class="reset-timer" id="reset-timer"></div>
+    </div>
+    
+    <div class="history" id="history">
+      <div class="history-header">
+        <h3>Reforge History</h3>
+        <button class="clear-history" id="clear-history">Clear History</button>
+      </div>
+      <div id="history-items"></div>
+    </div>
+  </div>
+
+  <script>
+    // CTP data
+    const ctps = [
+      { name: "Authority", img: "https://thanosvibs.money/static/assets/items/ctp_authority.png" },
+      { name: "Energy", img: "https://thanosvibs.money/static/assets/items/ctp_energy.png" },
+      { name: "Destruction", img: "https://thanosvibs.money/static/assets/items/ctp_destruction.png" },
+      { name: "Refinement", img: "https://thanosvibs.money/static/assets/items/ctp_refinement.png" },
+      { name: "Regeneration", img: "https://thanosvibs.money/static/assets/items/ctp_regeneration.png" },
+      { name: "Rage", img: "https://thanosvibs.money/static/assets/items/ctp_rage.png" },
+      { name: "Judgement", img: "https://thanosvibs.money/static/assets/items/ctp_judgement.png" },
+      { name: "Greed", img: "https://thanosvibs.money/static/assets/items/ctp_greed.png" },
+      { name: "Insight", img: "https://thanosvibs.money/static/assets/items/ctp_insight.png" },
+      { name: "Conquest", img: "https://thanosvibs.money/static/assets/items/ctp_conquest.png" },
+      { name: "Liberation", img: "https://thanosvibs.money/static/assets/items/ctp_liberation.png" },
+      { name: "Patience", img: "https://thanosvibs.money/static/assets/items/ctp_patience.png" },
+      { name: "Transcendence", img: "https://thanosvibs.money/static/assets/items/ctp_transcendence.png" }
+    ];
+
+    // Cost and chance table
+    const costTable = {
+      1: { cost: 70, chance: 3 },
+      2: { cost: 100, chance: 6 },
+      3: { cost: 150, chance: 9 },
+      4: { cost: 200, chance: 15 },
+      5: { cost: 250, chance: 21 }
+    };
+
+    // Game state
+    let selectedCTP = null;
+    const slots = Array(6).fill(null);
+    let resetTimeout = null;
+    const resetDelay = 3000;
+    let totalCoresSpent = 0;
+    let draggedCTP = null;
+
+    // Load saved state
+    let reforgingHistory = JSON.parse(localStorage.getItem('reforgingHistory')) || [];
+    totalCoresSpent = parseInt(localStorage.getItem('totalCoresSpent')) || 0;
+
+    // DOM elements
+    const ctpOptions = document.getElementById('ctp-options');
+    const reforgeBtn = document.getElementById('reforge-btn');
+    const clearSlotsBtn = document.getElementById('clear-slots');
+    const clearHistoryBtn = document.getElementById('clear-history');
+    const chanceDisplay = document.getElementById('chance');
+    const costDisplay = document.getElementById('cost');
+    const totalCoresDisplay = document.getElementById('total-cores');
+    const progressBar = document.getElementById('progress');
+    const resultsDiv = document.getElementById('results');
+    const resultText = document.getElementById('result-text');
+    const resultDetails = document.getElementById('result-details');
+    const resetTimer = document.getElementById('reset-timer');
+    const historyItems = document.getElementById('history-items');
+    const slotElements = Array.from({ length: 6 }, (_, i) => document.getElementById(`slot-${i}`));
+
+    // Initialize CTP options with drag functionality
+    ctps.forEach(ctp => {
+      const option = document.createElement('div');
+      option.className = 'ctp-option';
+      option.draggable = true;
+      option.dataset.ctpName = ctp.name;
+      option.innerHTML = `
+        <img src="${ctp.img}" alt="${ctp.name}">
+        <span>${ctp.name}</span>
+      `;
+      
+      // Drag start event
+      option.addEventListener('dragstart', (e) => {
+        draggedCTP = ctp;
+        e.target.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', ctp.name);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      
+      // Drag end event
+      option.addEventListener('dragend', (e) => {
+        e.target.classList.remove('dragging');
+        draggedCTP = null;
+      });
+      
+      // Click to select base CTP
+      option.addEventListener('click', () => {
+        selectBaseCTP(ctp);
+      });
+      
+      ctpOptions.appendChild(option);
+    });
+
+    // Initialize slots with drop functionality
+    slotElements.forEach((slot, index) => {
+      // Allow drops
+      slot.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (index === 0) return; // Can't drop on base slot
+        if (slots[index]) return; // Can't drop on filled slot
+        slot.classList.add('highlight');
+        e.dataTransfer.dropEffect = 'copy';
+      });
+      
+      // Remove highlight when leaving
+      slot.addEventListener('dragleave', () => {
+        slot.classList.remove('highlight');
+      });
+      
+      // Handle drop
+      slot.addEventListener('drop', (e) => {
+        e.preventDefault();
+        slot.classList.remove('highlight');
+        
+        if (index === 0) return; // Can't drop on base slot
+        if (slots[index]) return; // Can't drop on filled slot
+        if (!draggedCTP) return;
+        
+        fillSlot(index, draggedCTP);
+      });
+      
+      // Click to clear slot
+      slot.addEventListener('click', () => {
+        if (index === 0) {
+          if (selectedCTP) fillSlot(index, selectedCTP);
+        } else {
+          if (slots[index]) clearSlot(index);
+        }
+      });
+    });
+
+    // Clear slots button
+    clearSlotsBtn.addEventListener('click', () => {
+      for (let i = 1; i < 6; i++) clearSlot(i);
+    });
+
+    // Clear history button
+    clearHistoryBtn.addEventListener('click', () => {
+      if (confirm("Are you sure you want to clear your reforge history?")) {
+        reforgingHistory = [];
+        localStorage.setItem('reforgingHistory', JSON.stringify(reforgingHistory));
+        updateHistoryDisplay();
+      }
+    });
+
+    // Initialize displays
+    updateCurrencyDisplay();
+    updateCostAndChance();
+    updateHistoryDisplay();
+
+    function selectBaseCTP(ctp) {
+      selectedCTP = ctp;
+      
+      // Update UI
+      document.querySelectorAll('.ctp-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.ctpName === ctp.name);
+      });
+      
+      // Fill base slot
+      fillSlot(0, ctp);
+      checkReforgeReady();
+    }
+
+    function fillSlot(index, ctp) {
+      if (index === 0 && ctp.name !== selectedCTP?.name) return;
+      
+      slots[index] = ctp;
+      const slot = slotElements[index];
+      slot.classList.add('filled');
+      slot.innerHTML = `<img src="${ctp.img}" alt="${ctp.name}">`;
+      
+      updateCostAndChance();
+    }
+
+    function clearSlot(index) {
+      if (index === 0) {
+        selectedCTP = null;
+        document.querySelectorAll('.ctp-option').forEach(opt => {
+          opt.classList.remove('selected');
+        });
+      }
+      
+      slots[index] = null;
+      const slot = slotElements[index];
+      slot.classList.remove('filled');
+      slot.innerHTML = '';
+      
+      updateCostAndChance();
+    }
+
+    function updateCostAndChance() {
+      const additionalCtps = slots.slice(1).filter(ctp => ctp !== null).length;
+      const costInfo = costTable[additionalCtps] || { cost: 0, chance: 0 };
+      
+      chanceDisplay.textContent = `${costInfo.chance}%`;
+      costDisplay.textContent = costInfo.cost;
+      progressBar.style.width = `${(costInfo.chance / 21) * 100}%`;
+      
+      checkReforgeReady();
+    }
+
+    function checkReforgeReady() {
+      const hasBase = slots[0] !== null;
+      const additionalCtps = slots.slice(1).filter(ctp => ctp !== null).length;
+      
+      if (!resetTimeout) {
+        reforgeBtn.disabled = !hasBase || additionalCtps < 1;
+      }
+    }
+
+    function updateCurrencyDisplay() {
+      totalCoresDisplay.textContent = totalCoresSpent;
+    }
+
+    // Reforge logic
+    reforgeBtn.addEventListener('click', () => {
+      const additionalCtps = slots.slice(1).filter(ctp => ctp !== null).length;
+      const costInfo = costTable[additionalCtps];
+      
+      // Track spending
+      totalCoresSpent += costInfo.cost;
+      localStorage.setItem('totalCoresSpent', totalCoresSpent);
+      updateCurrencyDisplay();
+      
+      reforgeBtn.disabled = true;
+      
+      // Determine result
+      const isBrilliant = Math.random() * 100 < costInfo.chance;
+      const result = isBrilliant ? "Brilliant" : "Mighty";
+      
+      // Create history entry
+      const historyEntry = {
+        ctp: selectedCTP.name,
+        result: result,
+        chance: costInfo.chance,
+        cost: costInfo.cost,
+        date: new Date().toLocaleString(),
+        additionalCtps: additionalCtps,
+        ctpsUsed: slots.slice(1).filter(ctp => ctp !== null).map(ctp => ctp.name)
+      };
+      
+      reforgingHistory.unshift(historyEntry);
+      if (reforgingHistory.length > 50) reforgingHistory.pop();
+      
+      localStorage.setItem('reforgingHistory', JSON.stringify(reforgingHistory));
+      
+      // Show results
+      resultText.textContent = `You got a ${result} ${selectedCTP.name}!`;
+      resultText.className = `success ${result.toLowerCase()}`;
+      resultDetails.innerHTML = `
+        Chance: ${costInfo.chance}% | Cost: ${costInfo.cost} Cores<br>
+        Used: ${historyEntry.ctpsUsed.join(', ')}
+      `;
+      resultsDiv.style.display = 'block';
+      
+      updateHistoryDisplay();
+      startResetTimer();
+      resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    function updateHistoryDisplay() {
+      historyItems.innerHTML = reforgingHistory.map(entry => {
+        return `
+          <div class="history-item ${entry.result.toLowerCase()}-item">
+            ${entry.date} - ${entry.result} ${entry.ctp} (${entry.chance}% chance, ${entry.cost} Cores)
+            ${entry.ctpsUsed ? '<br>Used: ' + entry.ctpsUsed.join(', ') : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function startResetTimer() {
+      let secondsLeft = resetDelay / 1000;
+      
+      if (resetTimeout) clearTimeout(resetTimeout);
+      
+      resetTimer.textContent = `Resetting in ${secondsLeft} seconds...`;
+      
+      const timerInterval = setInterval(() => {
+        secondsLeft--;
+        resetTimer.textContent = `Resetting in ${secondsLeft} seconds...`;
+        
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+        }
+      }, 1000);
+      
+      resetTimeout = setTimeout(() => {
+        resetReforge();
+      }, resetDelay);
+    }
+
+    function resetReforge() {
+      resultsDiv.style.display = 'none';
+      resultText.textContent = '';
+      resultDetails.textContent = '';
+      resetTimer.textContent = '';
+      
+      for (let i = 1; i < 6; i++) clearSlot(i);
+      
+      checkReforgeReady();
+      resetTimeout = null;
+    }
+  </script>
+</body>
+</html>
