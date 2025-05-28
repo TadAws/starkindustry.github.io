@@ -105,6 +105,15 @@
       background: #222;
       border-radius: 5px;
     }
+   .version-info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #888;
+  font-size: 20px;
+  text-align: right;
+  line-height: 1.4;
+}
     .ctp-highlight {
       color: gold;
       font-weight: bold;
@@ -120,6 +129,11 @@
     <div class="stat-box">Pity: <span id="pity-count">0</span>/100</div>
     <div class="stat-box">CTPs: <span id="ctp-count">0</span></div>
   </div>
+
+  <div class="version-info">
+  Version 1.7<br>
+  Made For Stark Industry
+</div>
   
   <button id="pull-button" onclick="pull(10)">Open 10x (675 Crystals)</button>
   <button onclick="clearHistory()">Clear History</button>
