@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CTP/Obelisk Gambling Simulator</title>
+  <title>CTP/Obelisk Simulator</title>
   <style>
     body {
       font-family: sans-serif;
-      text-align: center;
       background: #111;
       color: #fff;
+      text-align: center;
     }
 
     button {
@@ -76,7 +76,8 @@
 </head>
 <body>
   <h1>CTP / Obelisk Pull Simulator</h1>
-  <p>Gems Spent: <span id="gem-count">0</span></p>
+  <p>Crystals Spent: <span id="crystal-count">0</span></p>
+  <p>Pity Counter: <span id="pity-count">0</span> / 100</p>
   <button onclick="pull(10)">Open 10x</button>
   <button onclick="clearHistory()">Clear History</button>
 
@@ -86,16 +87,17 @@
   <div id="history"></div>
 
   <script>
-    const gemPerPull = 600;
-    const gemDisplay = document.getElementById("gem-count");
+    const crystalPer10Pull = 675;
+    const crystalDisplay = document.getElementById("crystal-count");
+    const pityDisplay = document.getElementById("pity-count");
     const resultDiv = document.getElementById("result");
-    const historyDiv = document.getElementById("history");
     const controlsDiv = document.getElementById("controls");
+    const historyDiv = document.getElementById("history");
 
     const items = [
       { name: "1★ Obelisk", chance: 59.5, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043680828850206/Screenshot_20250528_005633_Future_Fight.jpg?ex=6837875d&is=683635dd&hm=6c952222f0c39daaf1f4fcd4d6772ac7f5c9563b6d974f0c2786e55fa1b1715f&=&format=webp" },
       { name: "2★ Obelisk", chance: 30, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043518991630376/Screenshot_20250528_005705_Future_Fight.jpg?ex=68378737&is=683635b7&hm=4373707acc96f80beeeaf8b54e97344ca694459c092e063b93934edd7a219ee1&=&format=webp" },
-      { name: "3★ Obelisk", chance: 5, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043519247749231/Screenshot_20250528_005707_Future_Fight.jpg?ex=68378737&is=683635b7&hm=dcadcd91702de0c2099857d926c8d0adcafceb320f2870456c1395cf2afac3ff&=&format=webp" },
+      { name: "3★ Obelisk", chance: 5, img: "ttps://media.discordapp.net/attachments/1375554664795213910/1377043519247749231/Screenshot_20250528_005707_Future_Fight.jpg?ex=68378737&is=683635b7&hm=dcadcd91702de0c2099857d926c8d0adcafceb320f2870456c1395cf2afac3ff&=&format=webp" },
       { name: "4★ Obelisk", chance: 2.5, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043519524307004/Screenshot_20250528_005709_Future_Fight.jpg?ex=68378737&is=683635b7&hm=f6ddb908e64b2a47c5d3a4a5d6ce0488d29a972a7ee536dc6bdbbfef58d6a664&=&format=webp" },
       { name: "5★ Obelisk", chance: 1.25, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043519725768816/Screenshot_20250528_005710_Future_Fight.jpg?ex=68378737&is=683635b7&hm=a6b5f4011f9809818743315a542943227318f79713db0d1a93a06a00d500dde8&=&format=webp" },
       { name: "6★ Obelisk", chance: 0.25, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043519939674184/Screenshot_20250528_005712_Future_Fight.jpg?ex=68378737&is=683635b7&hm=3f76132a0bdbc643e115b6e8d35e00b514e08e6a2640ecf5c320a88fdb145098&=&format=webp" },
@@ -114,13 +116,18 @@
       { name: "CTP Of Transcendence", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_transcendence.png" }
     ];
 
-    let gemSpent = parseInt(localStorage.getItem("gems")) || 0;
+    const ctpItems = items.filter(item => item.name.startsWith("CTP"));
+
+    let crystalsSpent = parseInt(localStorage.getItem("crystals")) || 0;
+    let pityCounter = parseInt(localStorage.getItem("pity")) || 0;
     let history = JSON.parse(localStorage.getItem("history") || "[]");
 
     function updateUI() {
-      gemDisplay.textContent = gemSpent;
+      crystalDisplay.textContent = crystalsSpent;
+      pityDisplay.textContent = pityCounter;
       historyDiv.innerHTML = history.map(h => `<div>${h}</div>`).join("");
-      localStorage.setItem("gems", gemSpent);
+      localStorage.setItem("crystals", crystalsSpent);
+      localStorage.setItem("pity", pityCounter);
       localStorage.setItem("history", JSON.stringify(history));
     }
 
@@ -134,47 +141,65 @@
       return items[0];
     }
 
-    function pull(count) {
-      let pulls = [];
-      for (let i = 0; i < count; i++) pulls.push(getRandomItem());
+   function pull(count) {
+  let pulls = [];
+  let gotCTP = false;
 
-      // Guarantee at least one 5★ or higher
-      if (!pulls.some(p => p.name.includes("5★") || p.name.includes("6★") || p.name.includes("CTP"))) {
-        pulls[Math.floor(Math.random() * count)] = items.find(i => i.name === "5★ Obelisk");
-      }
-
-      gemSpent += gemPerPull * count;
-      updateUI();
-
-      resultDiv.innerHTML = `<div class="grid">${pulls.map((item, i) => `
-        <div class="card" id="card-${i}">
-          <div class="inner">
-            <div class="front"></div>
-            <div class="back"><img src="${item.img}" alt="${item.name}"></div>
-          </div>
-        </div>
-      `).join("")}</div>`;
-
-      controlsDiv.innerHTML = `
-        <button onclick="skipReveal()">Skip</button>
-        <button onclick="closeResult()" style="display:none" id="closeBtn">Close</button>
-      `;
-
-      // Flip animation
-      let i = 0;
-      const interval = setInterval(() => {
-        const el = document.getElementById(`card-${i}`);
-        if (el) el.classList.add("flipped");
-        i++;
-        if (i >= pulls.length) {
-          clearInterval(interval);
-          document.getElementById("closeBtn").style.display = "inline-block";
-        }
-      }, 300);
-
-      history.push("Pull: " + pulls.map(p => p.name).join(", "));
-      updateUI();
+  for (let i = 0; i < count; i++) {
+    let item = getRandomItem();
+    if (item.name.startsWith("CTP")) {
+      gotCTP = true;
     }
+    pulls.push(item);
+  }
+
+  pityCounter += count;
+
+  // If CTP was pulled naturally, reset pity
+  if (gotCTP) {
+    pityCounter = 0;
+  }
+
+  // Pity system activates only if no CTP was pulled naturally
+  if (!gotCTP && pityCounter >= 100) {
+    pulls[Math.floor(Math.random() * count)] = ctpItems[Math.floor(Math.random() * ctpItems.length)];
+    pityCounter = 0;
+  }
+
+  // Guarantee 5★+ if none pulled
+  if (!pulls.some(p => p.name.includes("5★") || p.name.includes("6★") || p.name.startsWith("CTP"))) {
+    pulls[Math.floor(Math.random() * count)] = items.find(i => i.name === "5★ Obelisk");
+  }
+
+  crystalsSpent += crystalPer10Pull;
+  history.push("Pull: " + pulls.map(p => p.name).join(", "));
+  updateUI();
+
+  resultDiv.innerHTML = `<div class="grid">${pulls.map((item, i) => `
+    <div class="card" id="card-${i}">
+      <div class="inner">
+        <div class="front"></div>
+        <div class="back"><img src="${item.img}" alt="${item.name}"></div>
+      </div>
+    </div>
+  `).join("")}</div>`;
+
+  controlsDiv.innerHTML = `
+    <button onclick="skipReveal()">Skip</button>
+    <button id="closeBtn" onclick="closeResult()" style="display:none">Close</button>
+  `;
+
+  let i = 0;
+  const interval = setInterval(() => {
+    const el = document.getElementById(`card-${i}`);
+    if (el) el.classList.add("flipped");
+    i++;
+    if (i >= pulls.length) {
+      clearInterval(interval);
+      document.getElementById("closeBtn").style.display = "inline-block";
+    }
+  }, 300);
+}
 
     function skipReveal() {
       for (let i = 0; i < 10; i++) {
@@ -190,10 +215,11 @@
     }
 
     function clearHistory() {
-      if (confirm("Clear all history and gem count?")) {
-        localStorage.clear();
-        gemSpent = 0;
+      if (confirm("Clear all history, crystals, and pity?")) {
+        crystalsSpent = 0;
+        pityCounter = 0;
         history = [];
+        localStorage.clear();
         updateUI();
         resultDiv.innerHTML = "";
         controlsDiv.innerHTML = "";
