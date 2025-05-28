@@ -2,21 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CTP/Obelisk Simulator</title>
+  <title>CTP/Obelisk Gambling Simulator</title>
   <style>
     body {
       font-family: sans-serif;
+      text-align: center;
       background: #111;
       color: #fff;
-      text-align: center;
     }
-
     button {
       padding: 10px 20px;
       margin: 10px;
       cursor: pointer;
     }
-
     .grid {
       display: flex;
       flex-wrap: wrap;
@@ -24,13 +22,12 @@
       gap: 10px;
       margin-top: 20px;
     }
-
     .card {
       width: 120px;
       height: 160px;
       perspective: 1000px;
+      position: relative;
     }
-
     .inner {
       width: 100%;
       height: 100%;
@@ -38,11 +35,9 @@
       transform-style: preserve-3d;
       position: relative;
     }
-
     .flipped .inner {
       transform: rotateY(180deg);
     }
-
     .front, .back {
       position: absolute;
       width: 100%;
@@ -51,34 +46,85 @@
       border: 2px solid #333;
       border-radius: 8px;
     }
-
     .front {
       background: #444;
     }
-
     .back {
       background: #222;
       transform: rotateY(180deg);
     }
-
     .back img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       border-radius: 8px;
     }
-
+    .quantity {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      background: rgba(0,0,0,0.7);
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+    .ctp-glow {
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      background: radial-gradient(circle, rgba(255,215,0,0.8) 0%, rgba(255,215,0,0) 70%);
+      border-radius: 10px;
+      z-index: 10;
+      pointer-events: none;
+      animation: glow 1.5s infinite alternate;
+      display: none;
+    }
+    @keyframes glow {
+      from { opacity: 0.7; }
+      to { opacity: 1; }
+    }
     #result, #history {
       margin: 20px auto;
       max-width: 90%;
+    }
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      background: #222;
+      padding: 10px 20px;
+      border-radius: 8px;
+      min-width: 120px;
+    }
+    .history-item {
+      margin: 5px 0;
+      padding: 5px;
+      background: #222;
+      border-radius: 5px;
+    }
+    .ctp-highlight {
+      color: gold;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <h1>CTP / Obelisk Pull Simulator</h1>
-  <p>Crystals Spent: <span id="crystal-count">0</span></p>
-  <p>Pity Counter: <span id="pity-count">0</span> / 100</p>
-  <button onclick="pull(10)">Open 10x</button>
+  
+  <div class="stats">
+    <div class="stat-box">Crystals: <span id="crystal-count">0</span></div>
+    <div class="stat-box">Total Pulls: <span id="pull-count">0</span></div>
+    <div class="stat-box">Pity: <span id="pity-count">0</span>/100</div>
+    <div class="stat-box">CTPs: <span id="ctp-count">0</span></div>
+  </div>
+  
+  <button id="pull-button" onclick="pull(10)">Open 10x (675 Crystals)</button>
   <button onclick="clearHistory()">Clear History</button>
 
   <div id="result"></div>
@@ -87,12 +133,16 @@
   <div id="history"></div>
 
   <script>
-    const crystalPer10Pull = 675;
+    const CRYSTAL_PER_PULL = 67.5; // Changed to 675 for 10x
+    const PITY_MAX = 100;
     const crystalDisplay = document.getElementById("crystal-count");
+    const pullDisplay = document.getElementById("pull-count");
     const pityDisplay = document.getElementById("pity-count");
+    const ctpDisplay = document.getElementById("ctp-count");
     const resultDiv = document.getElementById("result");
-    const controlsDiv = document.getElementById("controls");
     const historyDiv = document.getElementById("history");
+    const controlsDiv = document.getElementById("controls");
+    const pullButton = document.getElementById("pull-button");
 
     const items = [
       { name: "1★ Obelisk", chance: 59.5, img: "https://media.discordapp.net/attachments/1375554664795213910/1377043680828850206/Screenshot_20250528_005633_Future_Fight.jpg?ex=6837875d&is=683635dd&hm=6c952222f0c39daaf1f4fcd4d6772ac7f5c9563b6d974f0c2786e55fa1b1715f&=&format=webp" },
@@ -116,19 +166,41 @@
       { name: "CTP Of Transcendence", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_transcendence.png" }
     ];
 
-    const ctpItems = items.filter(item => item.name.startsWith("CTP"));
-
-    let crystalsSpent = parseInt(localStorage.getItem("crystals")) || 0;
-    let pityCounter = parseInt(localStorage.getItem("pity")) || 0;
-    let history = JSON.parse(localStorage.getItem("history") || "[]");
+    // Initialize state
+    let state = {
+      crystals: parseInt(localStorage.getItem("crystals")) || 0,
+      totalPulls: parseInt(localStorage.getItem("totalPulls")) || 0,
+      pityCount: parseInt(localStorage.getItem("pityCount")) || 0,
+      ctpsObtained: parseInt(localStorage.getItem("ctpsObtained")) || 0,
+      history: JSON.parse(localStorage.getItem("history") || "[]"),
+      isPulling: false,
+      allCardsRevealed: false
+    };
 
     function updateUI() {
-      crystalDisplay.textContent = crystalsSpent;
-      pityDisplay.textContent = pityCounter;
-      historyDiv.innerHTML = history.map(h => `<div>${h}</div>`).join("");
-      localStorage.setItem("crystals", crystalsSpent);
-      localStorage.setItem("pity", pityCounter);
-      localStorage.setItem("history", JSON.stringify(history));
+      crystalDisplay.textContent = Math.floor(state.crystals); // Show whole numbers
+      pullDisplay.textContent = state.totalPulls;
+      pityDisplay.textContent = state.pityCount;
+      ctpDisplay.textContent = state.ctpsObtained;
+      pullButton.disabled = state.isPulling && !state.allCardsRevealed;
+      
+      localStorage.setItem("crystals", state.crystals);
+      localStorage.setItem("totalPulls", state.totalPulls);
+      localStorage.setItem("pityCount", state.pityCount);
+      localStorage.setItem("ctpsObtained", state.ctpsObtained);
+      localStorage.setItem("history", JSON.stringify(state.history));
+      
+      updateHistoryDisplay();
+    }
+
+    function updateHistoryDisplay() {
+      historyDiv.innerHTML = state.history.map(entry => {
+        if (entry.startsWith(">>>")) {
+          return `<div class="history-item ctp-highlight">${entry}</div>`;
+        } else {
+          return `<div class="history-item">${entry}</div>`;
+        }
+      }).join("");
     }
 
     function getRandomItem() {
@@ -141,84 +213,162 @@
       return items[0];
     }
 
-   function pull(count) {
-  let pulls = [];
-  let gotCTP = false;
-
-  for (let i = 0; i < count; i++) {
-    let item = getRandomItem();
-    if (item.name.startsWith("CTP")) {
-      gotCTP = true;
+    function groupItemsForDisplay(pulls) {
+      const grouped = {};
+      pulls.forEach(item => {
+        const key = item.name;
+        grouped[key] = grouped[key] || { ...item, quantity: 0 };
+        grouped[key].quantity++;
+      });
+      return Object.values(grouped);
     }
-    pulls.push(item);
-  }
 
-  pityCounter += count;
-
-  // If CTP was pulled naturally, reset pity
-  if (gotCTP) {
-    pityCounter = 0;
-  }
-
-  // Pity system activates only if no CTP was pulled naturally
-  if (!gotCTP && pityCounter >= 100) {
-    pulls[Math.floor(Math.random() * count)] = ctpItems[Math.floor(Math.random() * ctpItems.length)];
-    pityCounter = 0;
-  }
-
-  // Guarantee 5★+ if none pulled
-  if (!pulls.some(p => p.name.includes("5★") || p.name.includes("6★") || p.name.startsWith("CTP"))) {
-    pulls[Math.floor(Math.random() * count)] = items.find(i => i.name === "5★ Obelisk");
-  }
-
-  crystalsSpent += crystalPer10Pull;
-  history.push(`Pull ${history.length + 1}: ` + pulls.map(p => p.name).join(", "));
-  updateUI();
-
-  resultDiv.innerHTML = `<div class="grid">${pulls.map((item, i) => `
-    <div class="card" id="card-${i}">
-      <div class="inner">
-        <div class="front"></div>
-        <div class="back"><img src="${item.img}" alt="${item.name}"></div>
-      </div>
-    </div>
-  `).join("")}</div>`;
-
-  controlsDiv.innerHTML = `
-    <button onclick="skipReveal()">Skip</button>
-    <button id="closeBtn" onclick="closeResult()" style="display:none">Close</button>
-  `;
-
-  let i = 0;
-  const interval = setInterval(() => {
-    const el = document.getElementById(`card-${i}`);
-    if (el) el.classList.add("flipped");
-    i++;
-    if (i >= pulls.length) {
-      clearInterval(interval);
-      document.getElementById("closeBtn").style.display = "inline-block";
+    function formatHistoryEntry(pulls) {
+      const grouped = {};
+      pulls.forEach(item => {
+        const key = item.name;
+        grouped[key] = grouped[key] || { ...item, quantity: 0 };
+        grouped[key].quantity++;
+      });
+      return Object.entries(grouped).map(([name, item]) => {
+        return item.quantity > 1 ? `${name} ×${item.quantity}` : name;
+      }).join(", ");
     }
-  }, 300);
+
+    function pull(count) {
+    if (state.isPulling && !state.allCardsRevealed) return;
+    
+    state.isPulling = true;
+    state.allCardsRevealed = false;
+    updateUI();
+    
+    let pulls = [];
+    let gotCTP = false;
+
+    // Track pulls separately from pity counter
+    let pullsSinceLastCTP = state.pityCount;
+    
+    for (let i = 0; i < count; i++) {
+        state.totalPulls++;
+        pullsSinceLastCTP++;
+        
+        // Force CTP if reached pity (100 since last CTP)
+        if (pullsSinceLastCTP >= PITY_MAX && !gotCTP) {
+            const ctpItem = items.find(item => item.name.includes("CTP"));
+            pulls.push(ctpItem);
+            state.ctpsObtained++;
+            gotCTP = true;
+            pullsSinceLastCTP = 0; // Reset counter
+            state.pityCount = 0; // Ensure UI shows 0
+            continue;
+        }
+        
+        // Regular pull
+        const item = getRandomItem();
+        pulls.push(item);
+        
+        if (item.name.includes("CTP")) {
+            state.ctpsObtained++;
+            gotCTP = true;
+            pullsSinceLastCTP = 0; // Reset counter
+        }
+    }
+    
+    // Update pity counter (only if no CTP was obtained)
+    if (!gotCTP) {
+        state.pityCount = pullsSinceLastCTP;
+    } else {
+        state.pityCount = 0; // Force 0 if any CTP was obtained
+    }
+
+    state.crystals += CRYSTAL_PER_PULL * count;
+    showResults(groupItemsForDisplay(pulls));
+    
+    // Update history
+    const pullRange = `Pulls ${state.totalPulls-count+1}-${state.totalPulls}`;
+    const pullResults = formatHistoryEntry(pulls);
+    state.history.push(`${pullRange}: ${pullResults}`);
+    
+    if (gotCTP) {
+        const ctpCount = pulls.filter(p => p.name.includes("CTP")).length;
+        state.history.push(`>>> Obtained ${ctpCount} CTP(s)!`);
+    }
+    
+    updateUI();
 }
 
+    function showResults(groupedPulls) {
+      resultDiv.innerHTML = `
+        <div class="grid">
+          ${groupedPulls.map((item, i) => `
+            <div class="card" id="card-${i}">
+              <div class="inner">
+                <div class="front"></div>
+                <div class="back">
+                  <img src="${item.img}" alt="${item.name}">
+                  ${item.quantity > 1 ? `<div class="quantity">x${item.quantity}</div>` : ''}
+                </div>
+              </div>
+              ${item.name.includes("CTP") ? '<div class="ctp-glow"></div>' : ''}
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      controlsDiv.innerHTML = `
+        <button onclick="skipReveal()">Skip Reveal</button>
+        <button onclick="closeResult()" id="close-btn">Close</button>
+      `;
+
+      // Animate card flips
+      let currentCard = 0;
+      const flipInterval = setInterval(() => {
+        const card = document.getElementById(`card-${currentCard}`);
+        if (card) {
+          card.classList.add("flipped");
+          const glow = card.querySelector('.ctp-glow');
+          if (glow) setTimeout(() => glow.style.display = 'block', 300);
+        }
+        currentCard++;
+        if (currentCard >= groupedPulls.length) {
+          clearInterval(flipInterval);
+          state.allCardsRevealed = true;
+          updateUI();
+        }
+      }, 300);
+    }
+
     function skipReveal() {
-      for (let i = 0; i < 10; i++) {
-        const el = document.getElementById(`card-${i}`);
-        if (el) el.classList.add("flipped");
-      }
-      document.getElementById("closeBtn").style.display = "inline-block";
+      document.querySelectorAll('.card').forEach(card => {
+        if (!card.classList.contains("flipped")) {
+          card.classList.add("flipped");
+          const glow = card.querySelector('.ctp-glow');
+          if (glow) glow.style.display = 'block';
+        }
+      });
+      state.allCardsRevealed = true;
+      updateUI();
     }
 
     function closeResult() {
       resultDiv.innerHTML = "";
       controlsDiv.innerHTML = "";
+      state.isPulling = false;
+      state.allCardsRevealed = false;
+      updateUI();
     }
 
     function clearHistory() {
-      if (confirm("Clear all history, crystals, and pity?")) {
-        crystalsSpent = 0;
-        pityCounter = 0;
-        history = [];
+      if (confirm("Clear all history and statistics?")) {
+        state = {
+          crystals: 0,
+          totalPulls: 0,
+          pityCount: 0,
+          ctpsObtained: 0,
+          history: [],
+          isPulling: false,
+          allCardsRevealed: false
+        };
         localStorage.clear();
         updateUI();
         resultDiv.innerHTML = "";
@@ -226,6 +376,7 @@
       }
     }
 
+    // Initialize
     updateUI();
   </script>
 </body>
