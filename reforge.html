@@ -70,17 +70,13 @@
       transition: all 0.2s;
       width: 70px;
     }
-    .ctp-option.dragging {
-      opacity: 0.5;
-      cursor: grabbing;
-    }
-    .ctp-option.touch-selected {
+    .ctp-option.selected {
       transform: scale(1.1);
       box-shadow: 0 0 10px gold;
     }
-    .ctp-option.selected img {
-      border-color: gold;
-      box-shadow: 0 0 10px gold;
+    .ctp-option.active {
+      transform: scale(1.1);
+      box-shadow: 0 0 10px #00ccff;
     }
     .ctp-option img {
       width: 100%;
@@ -118,8 +114,9 @@
       border-color: gold;
       background: rgba(255,215,0,0.1);
     }
-    .slot.touch-target {
-      background: rgba(255,215,0,0.2);
+    .slot.active {
+      background: rgba(0,204,255,0.2);
+      border-color: #00ccff;
     }
     .slot.filled {
       border: 2px solid #666;
@@ -283,7 +280,7 @@
     <h1>CTP Reforging Simulator</h1>
     
     <div class="ctp-selector">
-      <h3 id="instructions">Select Base CTP (click) or Drag Additional CTPs:</h3>
+      <h3 id="instructions">Tap a CTP to set as Base, then tap others to add them</h3>
       <div class="ctp-options" id="ctp-options">
         <!-- Options will be added by JavaScript -->
       </div>
@@ -362,8 +359,7 @@
     let resetTimeout = null;
     const resetDelay = 3000;
     let totalCoresSpent = 0;
-    let draggedCTP = null;
-    let touchSelectedCTP = null;
+    let activeCTP = null;
     let isMobile = false;
 
     // Load saved state
@@ -390,9 +386,6 @@
     // Check if mobile device
     function checkIfMobile() {
       isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (isMobile) {
-        instructions.textContent = "Tap to select Base CTP, then tap additional CTPs to add them";
-      }
       return isMobile;
     }
 
@@ -401,46 +394,36 @@
       ctps.forEach(ctp => {
         const option = document.createElement('div');
         option.className = 'ctp-option';
-        option.draggable = true;
         option.dataset.ctpName = ctp.name;
         option.innerHTML = `
           <img src="${ctp.img}" alt="${ctp.name}">
           <span>${ctp.name}</span>
         `;
         
-        // Desktop drag events
-        option.addEventListener('dragstart', (e) => {
-          if (isMobile) return;
-          draggedCTP = ctp;
-          e.target.classList.add('dragging');
-          e.dataTransfer.setData('text/plain', ctp.name);
-        });
-        
-        option.addEventListener('dragend', (e) => {
-          if (isMobile) return;
-          e.target.classList.remove('dragging');
-          draggedCTP = null;
-        });
-        
-        // Mobile touch events
-        if (isMobile) {
-          option.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            touchSelectedCTP = ctp;
-            document.querySelectorAll('.ctp-option').forEach(opt => {
-              opt.classList.remove('touch-selected');
-            });
-            option.classList.add('touch-selected');
-          });
-        }
-        
-        // Click to select base CTP (works for both)
-        option.addEventListener('click', (e) => {
-          if (isMobile && touchSelectedCTP) {
-            e.preventDefault();
-            return;
+        // Click handler for both desktop and mobile
+        option.addEventListener('click', () => {
+          // If we have a base CTP selected and this isn't it, treat as additional CTP
+          if (selectedCTP && selectedCTP.name !== ctp.name) {
+            // Find first empty slot (1-5)
+            for (let i = 1; i < 6; i++) {
+              if (!slots[i]) {
+                fillSlot(i, ctp);
+                break;
+              }
+            }
+          } else {
+            // Set as base CTP
+            selectBaseCTP(ctp);
           }
-          selectBaseCTP(ctp);
+        });
+        
+        // Visual feedback for desktop hover
+        option.addEventListener('mouseenter', () => {
+          if (!isMobile) option.classList.add('active');
+        });
+        
+        option.addEventListener('mouseleave', () => {
+          if (!isMobile) option.classList.remove('active');
         });
         
         ctpOptions.appendChild(option);
@@ -450,63 +433,11 @@
     // Initialize slots
     function initializeSlots() {
       slotElements.forEach((slot, index) => {
-        // Desktop drop events
-        slot.addEventListener('dragover', (e) => {
-          if (isMobile) return;
-          e.preventDefault();
-          if (index === 0 || slots[index]) return;
-          slot.classList.add('highlight');
-        });
-        
-        slot.addEventListener('dragleave', () => {
-          if (isMobile) return;
-          slot.classList.remove('highlight');
-        });
-        
-        slot.addEventListener('drop', (e) => {
-          if (isMobile) return;
-          e.preventDefault();
-          slot.classList.remove('highlight');
-          if (index === 0 || slots[index] || !draggedCTP) return;
-          fillSlot(index, draggedCTP);
-        });
-        
-        // Mobile touch events
-        if (isMobile) {
-          slot.addEventListener('touchstart', (e) => {
-            if (!touchSelectedCTP || index === 0) return;
-            e.preventDefault();
-            slot.classList.add('touch-target');
-          });
-          
-          slot.addEventListener('touchend', (e) => {
-            if (!touchSelectedCTP || index === 0 || slots[index]) return;
-            e.preventDefault();
-            fillSlot(index, touchSelectedCTP);
-            slot.classList.remove('touch-target');
-            document.querySelectorAll('.ctp-option').forEach(opt => {
-              opt.classList.remove('touch-selected');
-            });
-            touchSelectedCTP = null;
-          });
-          
-          slot.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-          });
-          
-          slot.addEventListener('touchcancel', () => {
-            slot.classList.remove('touch-target');
-          });
-        }
-        
-        // Click to clear slot (works for both)
-        slot.addEventListener('click', (e) => {
-          if (isMobile && touchSelectedCTP) {
-            e.preventDefault();
-            return;
-          }
+        // Click to clear slot
+        slot.addEventListener('click', () => {
           if (index === 0) {
-            if (selectedCTP) fillSlot(index, selectedCTP);
+            // Base slot can't be cleared, just re-select
+            if (selectedCTP) fillSlot(0, selectedCTP);
           } else {
             if (slots[index]) clearSlot(index);
           }
