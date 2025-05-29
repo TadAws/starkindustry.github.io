@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CTP Reforging Simulator</title>
   <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
     body {
       font-family: sans-serif;
       text-align: center;
@@ -12,18 +16,17 @@
       color: #fff;
       margin: 0;
       padding: 20px;
+      touch-action: manipulation;
     }
-    
     .container {
       max-width: 800px;
       margin: 0 auto;
     }
-    
     h1 {
       color: gold;
       margin-bottom: 30px;
+      font-size: 1.5rem;
     }
-    
     .back-button {
       position: absolute;
       top: 10px;
@@ -35,8 +38,8 @@
       border-radius: 5px;
       cursor: pointer;
       text-decoration: none;
+      font-size: 0.9rem;
     }
-    
     .currency-display {
       position: absolute;
       top: 10px;
@@ -44,18 +47,15 @@
       background: rgba(0,0,0,0.5);
       padding: 8px 15px;
       border-radius: 5px;
-      font-size: 16px;
+      font-size: 0.9rem;
     }
-    
     .currency-display span {
       color: gold;
       font-weight: bold;
     }
-    
     .ctp-selector {
       margin: 20px 0;
     }
-    
     .ctp-options {
       display: flex;
       flex-wrap: wrap;
@@ -63,123 +63,108 @@
       gap: 10px;
       margin-top: 15px;
     }
-    
     .ctp-option {
       display: inline-block;
       margin: 5px;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s;
+      width: 70px;
     }
-    
     .ctp-option.dragging {
       opacity: 0.5;
       cursor: grabbing;
     }
-    
     .ctp-option.touch-selected {
       transform: scale(1.1);
-      box-shadow: 0 0 15px gold;
+      box-shadow: 0 0 10px gold;
     }
-    
     .ctp-option.selected img {
       border-color: gold;
-      box-shadow: 0 0 15px gold;
+      box-shadow: 0 0 10px gold;
     }
-    
     .ctp-option img {
-      width: 60px;
-      height: 60px;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1/1;
       object-fit: contain;
       border: 2px solid transparent;
       border-radius: 8px;
+      pointer-events: none;
     }
-    
     .ctp-option span {
       display: block;
       margin-top: 5px;
-      font-size: 12px;
+      font-size: 0.7rem;
+      pointer-events: none;
     }
-    
     .reforge-slots {
       display: flex;
       justify-content: center;
       flex-wrap: wrap;
       margin: 30px 0;
-      gap: 15px;
+      gap: 10px;
     }
-    
     .slot {
-      width: 80px;
-      height: 80px;
+      width: 70px;
+      height: 70px;
       border: 2px dashed #444;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.3s;
       position: relative;
     }
-    
     .slot.highlight {
       border-color: gold;
-      background: rgba(255, 215, 0, 0.1);
+      background: rgba(255,215,0,0.1);
     }
-    
     .slot.touch-target {
-      background: rgba(255, 215, 0, 0.2);
+      background: rgba(255,215,0,0.2);
     }
-    
     .slot.filled {
       border: 2px solid #666;
     }
-    
     .slot img {
       max-width: 90%;
       max-height: 90%;
     }
-    
     .slot.fixed {
       background: rgba(0,0,0,0.3);
     }
-    
     .slot.fixed::after {
       content: "Base";
       position: absolute;
-      bottom: -20px;
-      font-size: 12px;
+      bottom: -18px;
+      font-size: 0.7rem;
       color: #aaa;
+      width: 100%;
+      text-align: center;
     }
-    
     .chance-display {
       margin: 15px 0;
-      font-size: 18px;
+      font-size: 1rem;
     }
-    
     .cost-display {
       margin: 10px 0;
-      font-size: 16px;
+      font-size: 1rem;
     }
-    
     .cost-display span {
       color: gold;
     }
-    
     .progress-bar {
       width: 100%;
-      height: 20px;
+      height: 15px;
       background: #333;
       border-radius: 10px;
       margin: 15px 0;
       overflow: hidden;
     }
-    
     .progress {
       height: 100%;
       background: linear-gradient(to right, #d76d77, #ffaf7b);
       width: 0%;
-      transition: width 1s;
+      transition: width 0.5s;
     }
-    
     .reforge-button {
       padding: 12px 25px;
       background: linear-gradient(to right, #3a1c71, #d76d77, #ffaf7b);
@@ -187,53 +172,46 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 1rem;
       font-weight: bold;
       margin: 20px 0;
-      transition: all 0.3s;
+      transition: all 0.2s;
+      width: 100%;
+      max-width: 300px;
     }
-    
-    .reforge-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    .reforge-button:active {
+      transform: scale(0.98);
     }
-    
     .reforge-button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
       background: #666;
     }
-    
     .results {
       margin-top: 30px;
-      padding: 20px;
+      padding: 15px;
       border-radius: 8px;
       background: rgba(0,0,0,0.3);
       display: none;
     }
-    
     .success {
       color: gold;
-      font-size: 24px;
-      margin-bottom: 15px;
+      font-size: 1.2rem;
+      margin-bottom: 10px;
     }
-    
     .brilliant {
       color: #ffcc00;
-      text-shadow: 0 0 10px #ffcc00;
+      text-shadow: 0 0 5px #ffcc00;
     }
-    
     .mighty {
       color: #00ccff;
-      text-shadow: 0 0 10px #00ccff;
+      text-shadow: 0 0 5px #00ccff;
     }
-    
     .reset-timer {
       margin-top: 10px;
-      font-size: 14px;
+      font-size: 0.8rem;
       color: #aaa;
     }
-    
     .clear-slots {
       padding: 8px 15px;
       background: #333;
@@ -242,8 +220,8 @@
       border-radius: 5px;
       cursor: pointer;
       margin-top: 10px;
+      font-size: 0.9rem;
     }
-    
     .history {
       margin-top: 30px;
       text-align: left;
@@ -254,38 +232,46 @@
       border-radius: 8px;
       position: relative;
     }
-    
     .history-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 10px;
     }
-    
     .clear-history {
       background: #ff4444;
       color: white;
       border: none;
       border-radius: 3px;
       padding: 3px 8px;
-      font-size: 12px;
+      font-size: 0.7rem;
       cursor: pointer;
     }
-    
     .history-item {
-      padding: 8px;
+      padding: 8px 0;
       border-bottom: 1px solid #333;
+      font-size: 0.8rem;
     }
-    
     .history-item:last-child {
       border-bottom: none;
     }
-    
     .brilliant-item {
       color: #ffcc00;
     }
-    
     .mighty-item {
       color: #00ccff;
+    }
+    @media (min-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+      .ctp-option {
+        width: 80px;
+      }
+      .slot {
+        width: 80px;
+        height: 80px;
+      }
     }
   </style>
 </head>
@@ -297,7 +283,7 @@
     <h1>CTP Reforging Simulator</h1>
     
     <div class="ctp-selector">
-      <h3>Select Base CTP (click) or Drag Additional CTPs:</h3>
+      <h3 id="instructions">Select Base CTP (click) or Drag Additional CTPs:</h3>
       <div class="ctp-options" id="ctp-options">
         <!-- Options will be added by JavaScript -->
       </div>
@@ -378,7 +364,7 @@
     let totalCoresSpent = 0;
     let draggedCTP = null;
     let touchSelectedCTP = null;
-    let touchMode = false;
+    let isMobile = false;
 
     // Load saved state
     let reforgingHistory = JSON.parse(localStorage.getItem('reforgingHistory')) || [];
@@ -399,151 +385,136 @@
     const resetTimer = document.getElementById('reset-timer');
     const historyItems = document.getElementById('history-items');
     const slotElements = Array.from({ length: 6 }, (_, i) => document.getElementById(`slot-${i}`));
+    const instructions = document.getElementById('instructions');
+
+    // Check if mobile device
+    function checkIfMobile() {
+      isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        instructions.textContent = "Tap to select Base CTP, then tap additional CTPs to add them";
+      }
+      return isMobile;
+    }
 
     // Initialize CTP options
-    ctps.forEach(ctp => {
-      const option = document.createElement('div');
-      option.className = 'ctp-option';
-      option.draggable = true;
-      option.dataset.ctpName = ctp.name;
-      option.innerHTML = `
-        <img src="${ctp.img}" alt="${ctp.name}">
-        <span>${ctp.name}</span>
-      `;
-      
-      // Desktop drag events
-      option.addEventListener('dragstart', (e) => {
-        if (touchMode) return;
-        draggedCTP = ctp;
-        e.target.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', ctp.name);
-      });
-      
-      option.addEventListener('dragend', (e) => {
-        if (touchMode) return;
-        e.target.classList.remove('dragging');
-        draggedCTP = null;
-      });
-      
-      // Mobile touch events
-      option.addEventListener('touchstart', (e) => {
-        touchMode = true;
-        touchSelectedCTP = ctp;
-        document.querySelectorAll('.ctp-option').forEach(opt => {
-          opt.classList.remove('touch-selected');
+    function initializeCTPOptions() {
+      ctps.forEach(ctp => {
+        const option = document.createElement('div');
+        option.className = 'ctp-option';
+        option.draggable = true;
+        option.dataset.ctpName = ctp.name;
+        option.innerHTML = `
+          <img src="${ctp.img}" alt="${ctp.name}">
+          <span>${ctp.name}</span>
+        `;
+        
+        // Desktop drag events
+        option.addEventListener('dragstart', (e) => {
+          if (isMobile) return;
+          draggedCTP = ctp;
+          e.target.classList.add('dragging');
+          e.dataTransfer.setData('text/plain', ctp.name);
         });
-        e.target.classList.add('touch-selected');
-        e.preventDefault();
-      });
-      
-      // Click to select base CTP
-      option.addEventListener('click', (e) => {
-        if (touchMode) {
-          e.preventDefault();
-          return;
+        
+        option.addEventListener('dragend', (e) => {
+          if (isMobile) return;
+          e.target.classList.remove('dragging');
+          draggedCTP = null;
+        });
+        
+        // Mobile touch events
+        if (isMobile) {
+          option.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchSelectedCTP = ctp;
+            document.querySelectorAll('.ctp-option').forEach(opt => {
+              opt.classList.remove('touch-selected');
+            });
+            option.classList.add('touch-selected');
+          });
         }
-        selectBaseCTP(ctp);
+        
+        // Click to select base CTP (works for both)
+        option.addEventListener('click', (e) => {
+          if (isMobile && touchSelectedCTP) {
+            e.preventDefault();
+            return;
+          }
+          selectBaseCTP(ctp);
+        });
+        
+        ctpOptions.appendChild(option);
       });
-      
-      ctpOptions.appendChild(option);
-    });
+    }
 
     // Initialize slots
-    slotElements.forEach((slot, index) => {
-      // Desktop drop events
-      slot.addEventListener('dragover', (e) => {
-        if (touchMode) return;
-        e.preventDefault();
-        if (index === 0 || slots[index]) return;
-        slot.classList.add('highlight');
-      });
-      
-      slot.addEventListener('dragleave', () => {
-        if (touchMode) return;
-        slot.classList.remove('highlight');
-      });
-      
-      slot.addEventListener('drop', (e) => {
-        if (touchMode) return;
-        e.preventDefault();
-        slot.classList.remove('highlight');
-        if (index === 0 || slots[index] || !draggedCTP) return;
-        fillSlot(index, draggedCTP);
-      });
-      
-      // Mobile touch events
-      slot.addEventListener('touchstart', (e) => {
-        if (!touchMode) return;
-        if (index === 0 || slots[index]) return;
-        slot.classList.add('touch-target');
-      });
-      
-      slot.addEventListener('touchend', (e) => {
-        if (!touchMode || !touchSelectedCTP) return;
-        slot.classList.remove('touch-target');
-        if (index === 0 || slots[index]) return;
-        fillSlot(index, touchSelectedCTP);
-        touchSelectedCTP = null;
-        document.querySelectorAll('.ctp-option').forEach(opt => {
-          opt.classList.remove('touch-selected');
-        });
-        e.preventDefault();
-      });
-      
-      slot.addEventListener('touchmove', (e) => {
-        if (!touchMode) return;
-        e.preventDefault();
-      });
-      
-      slot.addEventListener('touchcancel', () => {
-        slot.classList.remove('touch-target');
-      });
-      
-      // Click to clear slot
-      slot.addEventListener('click', (e) => {
-        if (touchMode) {
+    function initializeSlots() {
+      slotElements.forEach((slot, index) => {
+        // Desktop drop events
+        slot.addEventListener('dragover', (e) => {
+          if (isMobile) return;
           e.preventDefault();
-          return;
+          if (index === 0 || slots[index]) return;
+          slot.classList.add('highlight');
+        });
+        
+        slot.addEventListener('dragleave', () => {
+          if (isMobile) return;
+          slot.classList.remove('highlight');
+        });
+        
+        slot.addEventListener('drop', (e) => {
+          if (isMobile) return;
+          e.preventDefault();
+          slot.classList.remove('highlight');
+          if (index === 0 || slots[index] || !draggedCTP) return;
+          fillSlot(index, draggedCTP);
+        });
+        
+        // Mobile touch events
+        if (isMobile) {
+          slot.addEventListener('touchstart', (e) => {
+            if (!touchSelectedCTP || index === 0) return;
+            e.preventDefault();
+            slot.classList.add('touch-target');
+          });
+          
+          slot.addEventListener('touchend', (e) => {
+            if (!touchSelectedCTP || index === 0 || slots[index]) return;
+            e.preventDefault();
+            fillSlot(index, touchSelectedCTP);
+            slot.classList.remove('touch-target');
+            document.querySelectorAll('.ctp-option').forEach(opt => {
+              opt.classList.remove('touch-selected');
+            });
+            touchSelectedCTP = null;
+          });
+          
+          slot.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+          });
+          
+          slot.addEventListener('touchcancel', () => {
+            slot.classList.remove('touch-target');
+          });
         }
-        if (index === 0) {
-          if (selectedCTP) fillSlot(index, selectedCTP);
-        } else {
-          if (slots[index]) clearSlot(index);
-        }
+        
+        // Click to clear slot (works for both)
+        slot.addEventListener('click', (e) => {
+          if (isMobile && touchSelectedCTP) {
+            e.preventDefault();
+            return;
+          }
+          if (index === 0) {
+            if (selectedCTP) fillSlot(index, selectedCTP);
+          } else {
+            if (slots[index]) clearSlot(index);
+          }
+        });
       });
-    });
+    }
 
-    // Touch detection
-    document.addEventListener('touchstart', () => {
-      touchMode = true;
-    }, { once: true });
-    
-    document.addEventListener('mousemove', () => {
-      touchMode = false;
-    }, { once: true });
-
-    // Clear slots button
-    clearSlotsBtn.addEventListener('click', () => {
-      for (let i = 1; i < 6; i++) clearSlot(i);
-    });
-
-    // Clear history button
-    clearHistoryBtn.addEventListener('click', () => {
-      if (confirm("Are you sure you want to clear ALL your history and reset cores spent?")) {
-        reforgingHistory = [];
-        totalCoresSpent = 0;
-        localStorage.setItem('reforgingHistory', JSON.stringify(reforgingHistory));
-        localStorage.setItem('totalCoresSpent', totalCoresSpent);
-        updateHistoryDisplay();
-        updateCurrencyDisplay();
-      }
-    });
-
-    // Initialize displays
-    updateCurrencyDisplay();
-    updateCostAndChance();
-    updateHistoryDisplay();
-
+    // Select base CTP
     function selectBaseCTP(ctp) {
       selectedCTP = ctp;
       
@@ -557,6 +528,7 @@
       checkReforgeReady();
     }
 
+    // Fill a slot with a CTP
     function fillSlot(index, ctp) {
       if (index === 0 && ctp.name !== selectedCTP?.name) return;
       
@@ -568,6 +540,7 @@
       updateCostAndChance();
     }
 
+    // Clear a slot
     function clearSlot(index) {
       if (index === 0) {
         selectedCTP = null;
@@ -584,6 +557,7 @@
       updateCostAndChance();
     }
 
+    // Update cost and chance display
     function updateCostAndChance() {
       const additionalCtps = slots.slice(1).filter(ctp => ctp !== null).length;
       const costInfo = costTable[additionalCtps] || { cost: 0, chance: 0 };
@@ -595,6 +569,7 @@
       checkReforgeReady();
     }
 
+    // Check if reforge button should be enabled
     function checkReforgeReady() {
       const hasBase = slots[0] !== null;
       const additionalCtps = slots.slice(1).filter(ctp => ctp !== null).length;
@@ -604,56 +579,60 @@
       }
     }
 
+    // Update currency display
     function updateCurrencyDisplay() {
       totalCoresDisplay.textContent = totalCoresSpent;
     }
 
     // Reforge logic
-    reforgeBtn.addEventListener('click', () => {
-      const additionalCtps = slots.slice(1).filter(ctp => ctp !== null).length;
-      const costInfo = costTable[additionalCtps];
-      
-      // Track spending
-      totalCoresSpent += costInfo.cost;
-      localStorage.setItem('totalCoresSpent', totalCoresSpent);
-      updateCurrencyDisplay();
-      
-      reforgeBtn.disabled = true;
-      
-      // Determine result
-      const isBrilliant = Math.random() * 100 < costInfo.chance;
-      const result = isBrilliant ? "Brilliant" : "Mighty";
-      
-      // Create history entry
-      const historyEntry = {
-        ctp: selectedCTP.name,
-        result: result,
-        chance: costInfo.chance,
-        cost: costInfo.cost,
-        date: new Date().toLocaleString(),
-        additionalCtps: additionalCtps,
-        ctpsUsed: slots.slice(1).filter(ctp => ctp !== null).map(ctp => ctp.name)
-      };
-      
-      reforgingHistory.unshift(historyEntry);
-      if (reforgingHistory.length > 50) reforgingHistory.pop();
-      
-      localStorage.setItem('reforgingHistory', JSON.stringify(reforgingHistory));
-      
-      // Show results
-      resultText.textContent = `You got a ${result} ${selectedCTP.name}!`;
-      resultText.className = `success ${result.toLowerCase()}`;
-      resultDetails.innerHTML = `
-        Chance: ${costInfo.chance}% | Cost: ${costInfo.cost} Cores<br>
-        Used: ${historyEntry.ctpsUsed.join(', ')}
-      `;
-      resultsDiv.style.display = 'block';
-      
-      updateHistoryDisplay();
-      startResetTimer();
-      resultsDiv.scrollIntoView({ behavior: 'smooth' });
-    });
+    function setupReforgeButton() {
+      reforgeBtn.addEventListener('click', () => {
+        const additionalCtps = slots.slice(1).filter(ctp => ctp !== null).length;
+        const costInfo = costTable[additionalCtps];
+        
+        // Track spending
+        totalCoresSpent += costInfo.cost;
+        localStorage.setItem('totalCoresSpent', totalCoresSpent);
+        updateCurrencyDisplay();
+        
+        reforgeBtn.disabled = true;
+        
+        // Determine result
+        const isBrilliant = Math.random() * 100 < costInfo.chance;
+        const result = isBrilliant ? "Brilliant" : "Mighty";
+        
+        // Create history entry
+        const historyEntry = {
+          ctp: selectedCTP.name,
+          result: result,
+          chance: costInfo.chance,
+          cost: costInfo.cost,
+          date: new Date().toLocaleString(),
+          additionalCtps: additionalCtps,
+          ctpsUsed: slots.slice(1).filter(ctp => ctp !== null).map(ctp => ctp.name)
+        };
+        
+        reforgingHistory.unshift(historyEntry);
+        if (reforgingHistory.length > 50) reforgingHistory.pop();
+        
+        localStorage.setItem('reforgingHistory', JSON.stringify(reforgingHistory));
+        
+        // Show results
+        resultText.textContent = `You got a ${result} ${selectedCTP.name}!`;
+        resultText.className = `success ${result.toLowerCase()}`;
+        resultDetails.innerHTML = `
+          Chance: ${costInfo.chance}% | Cost: ${costInfo.cost} Cores<br>
+          Used: ${historyEntry.ctpsUsed.join(', ')}
+        `;
+        resultsDiv.style.display = 'block';
+        
+        updateHistoryDisplay();
+        startResetTimer();
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
 
+    // Update history display
     function updateHistoryDisplay() {
       historyItems.innerHTML = reforgingHistory.map(entry => {
         return `
@@ -665,6 +644,7 @@
       }).join('');
     }
 
+    // Start reset timer
     function startResetTimer() {
       let secondsLeft = resetDelay / 1000;
       
@@ -686,6 +666,7 @@
       }, resetDelay);
     }
 
+    // Reset after reforge
     function resetReforge() {
       resultsDiv.style.display = 'none';
       resultText.textContent = '';
@@ -697,6 +678,43 @@
       checkReforgeReady();
       resetTimeout = null;
     }
+
+    // Clear slots button
+    function setupClearSlotsButton() {
+      clearSlotsBtn.addEventListener('click', () => {
+        for (let i = 1; i < 6; i++) clearSlot(i);
+      });
+    }
+
+    // Clear history button
+    function setupClearHistoryButton() {
+      clearHistoryBtn.addEventListener('click', () => {
+        if (confirm("Are you sure you want to clear ALL your history and reset cores spent?")) {
+          reforgingHistory = [];
+          totalCoresSpent = 0;
+          localStorage.setItem('reforgingHistory', JSON.stringify(reforgingHistory));
+          localStorage.setItem('totalCoresSpent', totalCoresSpent);
+          updateHistoryDisplay();
+          updateCurrencyDisplay();
+        }
+      });
+    }
+
+    // Initialize the app
+    function init() {
+      checkIfMobile();
+      initializeCTPOptions();
+      initializeSlots();
+      setupReforgeButton();
+      setupClearSlotsButton();
+      setupClearHistoryButton();
+      updateCurrencyDisplay();
+      updateCostAndChance();
+      updateHistoryDisplay();
+    }
+
+    // Start the app
+    init();
   </script>
 </body>
 </html>
