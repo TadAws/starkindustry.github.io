@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvel Future Fight Artifact Simulator</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #121212;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #f8d64e;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button {
+            background-color: #f8d64e;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover:not(:disabled) {
+            background-color: #ffeb3b;
+            transform: scale(1.05);
+        }
+        
+        button:disabled {
+            background-color: #666;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background: #f8d64e;
+  transform: scale(1.05);
+color: black;
+}
+
+        
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin: 30px auto;
+            max-width: 800px;
+        }
+        
+        .card {
+            position: relative;
+            width: 150px;
+            height: 200px;
+            perspective: 1000px;
+            margin: 0 auto;
+        }
+        
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+        
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .card-front {
+            background-color: #1a1a1a;
+            border: 2px solid #333;
+        }
+        
+        .card-back {
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #1a1a1a;
+            border: 2px solid #444;
+        }
+        
+        .card-back img {
+            max-width: 90%;
+            max-height: 70%;
+            margin-bottom: 5px;
+        }
+        
+        .card-name {
+            font-size: 12px;
+            text-align: center;
+            padding: 0 5px;
+            word-break: break-word;
+            margin-top: 5px;
+        }
+        
+        .halo {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 15px;
+            z-index: -1;
+        }
+        
+        .halo.blue {
+            background: radial-gradient(circle, rgba(0,180,255,0.7) 0%, rgba(0,180,255,0) 70%);
+            box-shadow: 0 0 15px rgba(0,180,255,0.7);
+        }
+        
+        .halo.purple {
+            background: radial-gradient(circle, rgba(156,39,176,0.7) 0%, rgba(156,39,176,0) 70%);
+            box-shadow: 0 0 15px rgba(156,39,176,0.7);
+        }
+        
+        .halo.gold {
+            background: radial-gradient(circle, rgba(255,215,0,0.7) 0%, rgba(255,215,0,0) 70%);
+            box-shadow: 0 0 15px rgba(255,215,0,0.7);
+        }
+        
+        .halo.red {
+            background: radial-gradient(circle, rgba(255,0,0,0.7) 0%, rgba(255,0,0,0) 70%);
+            box-shadow: 0 0 15px rgba(255,0,0,0.7);
+        }
+        
+        .stats {
+            margin-top: 30px;
+            background-color: #222;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .history {
+            margin-top: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #222;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+        }
+        
+        .history-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #444;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .rarity-3 {
+            color: #00b4ff;
+        }
+        
+        .rarity-4 {
+            color: #9c27b0;
+        }
+        
+        .rarity-5 {
+            color: #f8d64e;
+        }
+        
+        .rarity-6 {
+            color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Artifact Simulator</h1>
+        
+        <div class="stats">
+            <p>Total Opens: <span id="total-opens">0</span> (x10)</p>
+            <p>Total Spent: <span id="total-spent">0</span> Crystals / <span id="total-essence">0</span> Celestial Essence</p>
+        </div>
+
+<button class="back-button" onclick="window.location.href='index.html'">← Back</button>
+        
+        <div class="controls">
+            <button id="open-ten">Open x10 (675 Crystals/250 Celestial Essence)</button>
+            <button id="skip" disabled>Skip Animation</button>
+            <button id="clear-history">Clear History</button>
+        </div>
+        
+        <div class="card-container" id="card-container">
+            <!-- Cards will be generated here -->
+        </div>
+        
+        <div class="history">
+            <h3>History</h3>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Artifact data - complete list
+        const artifacts = {
+            // Base artifacts
+            "LV.1 Artifact": {
+                "1 Star": "https://media.discordapp.net/attachments/1375554664795213910/1377703085329088622/Screenshot_20250529_203047_Future_Fight-removebg-preview1.png?ex=6839ed7c&is=68389bfc&hm=3b3008199d12f2e3a3ce22149f005af8cd375ee52b8759b02719a3f263871a74&=&format=webp&quality=lossless"
+            },
+            "LV.2 Artifact": {
+                "2 Star": "https://media.discordapp.net/attachments/1375554664795213910/1377702664636465222/Screenshot_20250529_203046_Future_Fight-removebg-preview.png?ex=6839ed17&is=68389b97&hm=c7266608eadc2fbdc3e9d70321fd7d916ed72ee503bfd19433191cf341d3ee48&=&format=webp&quality=lossless"
+            },
+            "LV.3 Artifact": {
+                "3 Star": "https://media.discordapp.net/attachments/1375554664795213910/1377702664082817094/Untitled7_20250529203814.png?ex=6839ed17&is=68389b97&hm=4454713c32825203fed925f23c698dd1005e6273ae1cde8e26ec50597698c799&=&format=webp&quality=lossless"
+            },
+            // Character artifacts
+            "Abomination": "https://thanosvibs.money/static/assets/items/artifact_abomination.png",
+            "Absorbing Man": "https://thanosvibs.money/static/assets/items/artifact_absorbingman.png",
+            "Adam Warlock": "https://thanosvibs.money/static/assets/items/artifact_adamwarlock.png",
+            "Aero": "https://thanosvibs.money/static/assets/items/artifact_aero.png",
+            "Agent Venom": "https://thanosvibs.money/static/assets/items/artifact_agentvenom.png",
+            "America Chavez": "https://thanosvibs.money/static/assets/items/artifact_americachavez.png",
+            "Ancient One": "https://thanosvibs.money/static/assets/items/artifact_ancientone.png",
+            "Angel": "https://thanosvibs.money/static/assets/items/artifact_angel.png",
+            "Angela": "https://thanosvibs.money/static/assets/items/artifact_angela.png",
+            "Ant Man": "https://thanosvibs.money/static/assets/items/artifact_antman.png",
+            "Anti Man": "https://thanosvibs.money/static/assets/items/artifact_antiman.png",
+            "Apocalypse": "https://thanosvibs.money/static/assets/items/artifact_apocalypse.png",
+            "Arachknight": "https://thanosvibs.money/static/assets/items/artifact_arachknight.png",
+            "Baron Mordo": "https://thanosvibs.money/static/assets/items/artifact_baronmordo.png",
+            "Baron Zemo": "https://thanosvibs.money/static/assets/items/artifact_baronzemo.png",
+            "Beast": "https://thanosvibs.money/static/assets/items/artifact_beast.png",
+            "Beta Ray Bill": "https://thanosvibs.money/static/assets/items/artifact_betaraybill.png",
+            "Bishop": "https://thanosvibs.money/static/assets/items/artifact_bishop.png",
+            "Black Bolt": "https://thanosvibs.money/static/assets/items/artifact_blackbolt.png",
+            "Black Cat": "https://thanosvibs.money/static/assets/items/artifact_blackcat.png",
+            "Black Panther": "https://thanosvibs.money/static/assets/items/artifact_blackpanther.png",
+            "Black Swan": "https://thanosvibs.money/static/assets/items/artifact_blackswan.png",
+            "Black Widow": "https://thanosvibs.money/static/assets/items/artifact_blackwidow.png",
+            "Blade": "https://thanosvibs.money/static/assets/items/artifact_blade.png",
+            "Blue Dragon": "https://thanosvibs.money/static/assets/items/artifact_bluedragon.png",
+            "Bullseye": "https://thanosvibs.money/static/assets/items/artifact_bullseye.png",
+            "Cable": "https://thanosvibs.money/static/assets/items/artifact_cable.png",
+            "Captain America": "https://thanosvibs.money/static/assets/items/artifact_captainamerica.png",
+            "Sharon Rogers": "https://thanosvibs.money/static/assets/items/artifact_captainamericasharonrogers.png",
+            "Captain Marvel": "https://thanosvibs.money/static/assets/items/artifact_captainmarvel.png",
+            "Carnage": "https://thanosvibs.money/static/assets/items/artifact_carnage.png",
+            "Cassandra Nova": "https://thanosvibs.money/static/assets/items/artifact_cassandranova.png",
+            "Cassie Lang": "https://thanosvibs.money/static/assets/items/artifact_cassielang.png",
+            "Clea": "https://thanosvibs.money/static/assets/items/artifact_clea.png",
+            "Colossus": "https://thanosvibs.money/static/assets/items/artifact_colossus.png",
+            "Crescent": "https://thanosvibs.money/static/assets/items/artifact_crescent.png",
+            "Crossbones": "https://thanosvibs.money/static/assets/items/artifact_crossbones.png",
+            "Cyclops": "https://thanosvibs.money/static/assets/items/artifact_cyclops.png",
+            "Daken": "https://thanosvibs.money/static/assets/items/artifact_daken.png",
+            "Daredevil": "https://thanosvibs.money/static/assets/items/artifact_daredevil.png",
+            "Dazzler": "https://thanosvibs.money/static/assets/items/artifact_dazzler.png",
+            "Deadpool": "https://thanosvibs.money/static/assets/items/artifact_deadpool.png",
+            "Destroyer": "https://thanosvibs.money/static/assets/items/artifact_destroyer.png",
+            "Doctor Doom": "https://thanosvibs.money/static/assets/items/artifact_doctordoom.png",
+            "Doctor Octopus": "https://thanosvibs.money/static/assets/items/artifact_doctoroctopus.png",
+            "Doctor Strange": "https://thanosvibs.money/static/assets/items/artifact_doctorstrange.png",
+            "Doctor Voodoo": "https://thanosvibs.money/static/assets/items/artifact_doctorvoodoo.png",
+            "Domino": "https://thanosvibs.money/static/assets/items/artifact_domino.png",
+            "Drax": "https://thanosvibs.money/static/assets/items/artifact_drax.png",
+            "Ebony Maw": "https://thanosvibs.money/static/assets/items/artifact_ebonymaw.png",
+            "Echo": "https://thanosvibs.money/static/assets/items/artifact_echo.png",
+            "Electro": "https://thanosvibs.money/static/assets/items/artifact_electro.png",
+            "Elektra": "https://thanosvibs.money/static/assets/items/artifact_elektra.png",
+            "Emma Frost": "https://thanosvibs.money/static/assets/items/artifact_emmafrost.png",
+            "Enchantress": "https://thanosvibs.money/static/assets/items/artifact_enchantress.png",
+            "Exodus": "https://thanosvibs.money/static/assets/items/artifact_exodus.png",
+            "Falcon": "https://thanosvibs.money/static/assets/items/artifact_falcon.png",
+            "Fandral": "https://thanosvibs.money/static/assets/items/artifact_fandral.png",
+            "Franklin Richards": "https://thanosvibs.money/static/assets/items/artifact_franklinrichards.png",
+            "Gambit": "https://thanosvibs.money/static/assets/items/artifact_gambit.png",
+            "Gamora": "https://thanosvibs.money/static/assets/items/artifact_gamora.png",
+            "Ghost": "https://thanosvibs.money/static/assets/items/artifact_ghost.png",
+            "Ghost Panther": "https://thanosvibs.money/static/assets/items/artifact_ghostpanther.png",
+            "Ghost Rider": "https://thanosvibs.money/static/assets/items/artifact_ghostrider.png",
+            "Robbie Reyes": "https://thanosvibs.money/static/assets/items/artifact_ghostriderrobbiereyes.png",
+            "Giant Man": "https://thanosvibs.money/static/assets/items/artifact_giantman.png",
+            "Gilgamesh": "https://thanosvibs.money/static/assets/items/artifact_gilgamesh.png",
+            "Gladiator": "https://thanosvibs.money/static/assets/items/artifact_gladiator.png",
+            "Gorr": "https://thanosvibs.money/static/assets/items/artifact_gorr.png",
+            "Green Goblin": "https://thanosvibs.money/static/assets/items/artifact_greengoblin.png",
+            "Groot": "https://thanosvibs.money/static/assets/items/artifact_groot.png",
+            "Gwenpool": "https://thanosvibs.money/static/assets/items/artifact_gwenpool.png",
+            "Havok": "https://thanosvibs.money/static/assets/items/artifact_havok.png",
+            "Hawkeye": "https://thanosvibs.money/static/assets/items/artifact_hawkeye.png",
+            "Kate Bishop": "https://thanosvibs.money/static/assets/items/artifact_hawkeyekatebishop.png",
+            "Heimdall": "https://thanosvibs.money/static/assets/items/artifact_heimdall.png",
+            "Hela": "https://thanosvibs.money/static/assets/items/artifact_hela.png",
+            "Hellstorm": "https://thanosvibs.money/static/assets/items/artifact_hellstorm.png",
+            "Hogun": "https://thanosvibs.money/static/assets/items/artifact_hogun.png",
+            "Hope Summer": "https://thanosvibs.money/static/assets/items/artifact_hopesummers.png",
+            "Hulk": "https://thanosvibs.money/static/assets/items/artifact_hulk.png",
+            "Hulkbuster": "https://thanosvibs.money/static/assets/items/artifact_hulkbusterironmanmark44.png",
+            "Hulkling": "https://thanosvibs.money/static/assets/items/artifact_hulkling.png",
+            "Human Torch": "https://thanosvibs.money/static/assets/items/artifact_humantorch.png",
+            "Hydro Man": "https://thanosvibs.money/static/assets/items/artifact_hydroman.png",
+            "Hyperion": "https://thanosvibs.money/static/assets/items/artifact_hyperion.png",
+            "Iceman": "https://thanosvibs.money/static/assets/items/artifact_iceman.png",
+            "Ikaris": "https://thanosvibs.money/static/assets/items/artifact_ikaris.png",
+            "Ikon": "https://thanosvibs.money/static/assets/items/artifact_ikon.png",
+            "Invisible Woman": "https://thanosvibs.money/static/assets/items/artifact_invisiblewoman.png",
+            "Iron Hammer": "https://thanosvibs.money/static/assets/items/artifact_ironhammer.png",
+            "Iron Man": "https://thanosvibs.money/static/assets/items/artifact_ironman.png",
+            "Ironheart": "https://thanosvibs.money/static/assets/items/artifact_ironheart.png",
+            "Jean Grey": "https://thanosvibs.money/static/assets/items/artifact_jeangrey.png",
+            "Jubilee": "https://thanosvibs.money/static/assets/items/artifact_jubilee.png",
+            "Juggernaut": "https://thanosvibs.money/static/assets/items/artifact_juggernaut.png",
+            "Kaecilius": "https://thanosvibs.money/static/assets/items/artifact_kaecilius.png",
+            "Kahhori": "https://thanosvibs.money/static/assets/items/artifact_kahhori.png",
+            "Kang The Conqueror": "https://thanosvibs.money/static/assets/items/artifact_kangtheconqueror.png",
+            "Katy": "https://thanosvibs.money/static/assets/items/artifact_katy.png",
+            "Kid Omega": "https://thanosvibs.money/static/assets/items/artifact_kidomega.png",
+            "Killmonger": "https://thanosvibs.money/static/assets/items/artifact_killmonger.png",
+            "Kingo": "https://thanosvibs.money/static/assets/items/artifact_kingo.png",
+            "Kingpin": "https://thanosvibs.money/static/assets/items/artifact_kingpin.png",
+            "Kitty Pryde": "https://thanosvibs.money/static/assets/items/artifact_kittypryde.png",
+            "Knull": "https://thanosvibs.money/static/assets/items/artifact_knull.png",
+            "Korath": "https://thanosvibs.money/static/assets/items/artifact_korath.png",
+            "Kraven The Hunter": "https://thanosvibs.money/static/assets/items/artifact_kraventhehunter.png",
+            "Leader": "https://thanosvibs.money/static/assets/items/artifact_leader.png",
+            "Lincoln Campbell": "https://thanosvibs.money/static/assets/items/artifact_lincolncampbell.png",
+            "Lizard": "https://thanosvibs.money/static/assets/items/artifact_lizard.png",
+            "Loki": "https://thanosvibs.money/static/assets/items/artifact_loki.png",
+            "Luna Snow": "https://thanosvibs.money/static/assets/items/artifact_lunasnow.png",
+            "M'baku": "https://thanosvibs.money/static/assets/items/artifact_mbaku.png",
+            "M.O.D.O.K": "https://thanosvibs.money/static/assets/items/artifact_modok.png",
+            "Madelyne Pryor": "https://thanosvibs.money/static/assets/items/artifact_madelynepryor.png",
+            "Magik": "https://thanosvibs.money/static/assets/items/artifact_magik.png",
+            "Magneto": "https://thanosvibs.money/static/assets/items/artifact_magneto.png",
+            "Makkari": "https://thanosvibs.money/static/assets/items/artifact_makkari.png",
+            "Malekith": "https://thanosvibs.money/static/assets/items/artifact_malekith.png",
+            "Man Thing": "https://thanosvibs.money/static/assets/items/artifact_manthing.png",
+            "Mantis": "https://thanosvibs.money/static/assets/items/artifact_mantis.png",
+            "Minn Erva": "https://thanosvibs.money/static/assets/items/artifact_minnerva.png",
+            "Mister Fantastic": "https://thanosvibs.money/static/assets/items/artifact_misterfantastic.png",
+            "Mister Sinister": "https://thanosvibs.money/static/assets/items/artifact_mistersinister.png",
+            "Misty Knight": "https://thanosvibs.money/static/assets/items/artifact_mistyknight.png",
+            "Molten Man": "https://thanosvibs.money/static/assets/items/artifact_moltenman.png",
+            "Moon Girl": "https://thanosvibs.money/static/assets/items/artifact_moongirl.png",
+            "Moon Knight": "https://thanosvibs.money/static/assets/items/artifact_moonknight.png",
+            "Morgan Le Fay": "https://thanosvibs.money/static/assets/items/artifact_morganlefay.png",
+            "Ms Marvel": "https://thanosvibs.money/static/assets/items/artifact_msmarvelkamalakhan.png",
+            "Mysterio": "https://thanosvibs.money/static/assets/items/artifact_mysterio.png",
+            "Mystique": "https://thanosvibs.money/static/assets/items/artifact_mystique.png",
+            "Namor": "https://thanosvibs.money/static/assets/items/artifact_namor.png",
+            "Nebula": "https://thanosvibs.money/static/assets/items/artifact_nebula.png",
+            "Negasonic Teenage Warhead": "https://thanosvibs.money/static/assets/items/artifact_negasonicteenagewarhead.png",
+            "Nick Fury": "https://thanosvibs.money/static/assets/items/artifact_nickfury.png",
+            "Nova Sam Alexander": "https://thanosvibs.money/static/assets/items/artifact_novasamalexander.png",
+            "Odin": "https://thanosvibs.money/static/assets/items/artifact_odin.png",
+            "Okoye": "https://thanosvibs.money/static/assets/items/artifact_okoye.png",
+            "Omega Red": "https://thanosvibs.money/static/assets/items/artifact_omegared.png",
+            "Phil Coulson": "https://thanosvibs.money/static/assets/items/artifact_philcoulson.png",
+            "Phyla Vell": "https://thanosvibs.money/static/assets/items/artifact_phylavell.png",
+            "Polaris": "https://thanosvibs.money/static/assets/items/artifact_polaris.png",
+            "Professor X": "https://thanosvibs.money/static/assets/items/artifact_professorx.png",
+            "Psylocke": "https://thanosvibs.money/static/assets/items/artifact_psylocke.png",
+            "Punisher": "https://thanosvibs.money/static/assets/items/artifact_punisher.png",
+            "Quasar": "https://thanosvibs.money/static/assets/items/artifact_quasarwendellvaughn.png",
+            "Quicksilver": "https://thanosvibs.money/static/assets/items/artifact_quicksilver.png",
+            "Rachel Summer": "https://thanosvibs.money/static/assets/items/artifact_rachelsummers.png",
+            "Red Guardian": "https://thanosvibs.money/static/assets/items/artifact_redguardian.png",
+            "Red Hulk": "https://thanosvibs.money/static/assets/items/artifact_redhulk.png",
+            "Red She Hulk": "https://thanosvibs.money/static/assets/items/artifact_redshehulk.png",
+            "Rescue": "https://thanosvibs.money/static/assets/items/artifact_rescue.png",
+            "Rhino": "https://thanosvibs.money/static/assets/items/artifact_rhino.png",
+            "Rocket Raccoon": "https://thanosvibs.money/static/assets/items/artifact_rocketraccoon.png",
+            "Rogue": "https://thanosvibs.money/static/assets/items/artifact_rogue.png",
+            "Ronan": "https://thanosvibs.money/static/assets/items/artifact_ronan.png",
+            "Sabretooth": "https://thanosvibs.money/static/assets/items/artifact_sabretooth.png",
+            "Sandman": "https://thanosvibs.money/static/assets/items/artifact_sandman.png",
+            "Satana": "https://thanosvibs.money/static/assets/items/artifact_satana.png",
+            "Scarlet Spider": "https://thanosvibs.money/static/assets/items/artifact_scarletspider.png",
+            "Scarlet Witch": "https://thanosvibs.money/static/assets/items/artifact_scarletwitch.png",
+            "Scorpion": "https://thanosvibs.money/static/assets/items/artifact_scorpion.png",
+            "Scream": "https://thanosvibs.money/static/assets/items/artifact_scream.png",
+            "Sentry": "https://thanosvibs.money/static/assets/items/artifact_sentry.png",
+            "Sersi": "https://thanosvibs.money/static/assets/items/artifact_sersi.png",
+            "Shadow Shell": "https://thanosvibs.money/static/assets/items/artifact_shadowshell.png",
+            "Shang Chi": "https://thanosvibs.money/static/assets/items/artifact_shangchi.png",
+            "She Hulk": "https://thanosvibs.money/static/assets/items/artifact_shehulk.png",
+            "Shuri": "https://thanosvibs.money/static/assets/items/artifact_shuri.png",
+            "Sif": "https://thanosvibs.money/static/assets/items/artifact_sif.png",
+            "Silver Surfer": "https://thanosvibs.money/static/assets/items/artifact_silversurfer.png",
+            "Sin": "https://thanosvibs.money/static/assets/items/artifact_sin.png",
+            "Sister Grimm": "https://thanosvibs.money/static/assets/items/artifact_sistergrimm.png",
+            "Skurge": "https://thanosvibs.money/static/assets/items/artifact_skurge.png",
+            "Sleeper": "https://thanosvibs.money/static/assets/items/artifact_sleeper.png",
+            "Spectrum": "https://thanosvibs.money/static/assets/items/artifact_spectrum.png",
+            "Spider Gwen": "https://thanosvibs.money/static/assets/items/artifact_spidergwen.png",
+            "Spiderman": "https://thanosvibs.money/static/assets/items/artifact_spiderman.png",
+            "Miles Morales": "https://thanosvibs.money/static/assets/items/artifact_spidermanmilesmorales.png",
+            "Spiderman 2099": "https://thanosvibs.money/static/assets/items/artifact_spiderman2099.png",
+            "Spider Woman": "https://thanosvibs.money/static/assets/items/artifact_spiderwoman.png",
+            "Spot": "https://thanosvibs.money/static/assets/items/artifact_spot.png",
+            "Squirrel Girl": "https://thanosvibs.money/static/assets/items/artifact_squirrelgirl.png",
+            "Star Lord": "https://thanosvibs.money/static/assets/items/artifact_starlord.png",
+            "Storm": "https://thanosvibs.money/static/assets/items/artifact_storm.png",
+            "Stryfe": "https://thanosvibs.money/static/assets/items/artifact_stryfe.png",
+            "Sun Bird": "https://thanosvibs.money/static/assets/items/artifact_sunbird.png",
+            "Sword Master": "https://thanosvibs.money/static/assets/items/artifact_swordmaster.png",
+            "Sylvie": "https://thanosvibs.money/static/assets/items/artifact_sylvie.png",
+            "Taskmaster": "https://thanosvibs.money/static/assets/items/artifact_taskmaster.png",
+            "Thane": "https://thanosvibs.money/static/assets/items/artifact_thane.png",
+            "Thanos": "https://thanosvibs.money/static/assets/items/artifact_thanos.png",
+            "The Thing": "https://thanosvibs.money/static/assets/items/artifact_thething.png",
+            "Thena": "https://thanosvibs.money/static/assets/items/artifact_thena.png",
+            "Thor": "https://thanosvibs.money/static/assets/items/artifact_thor.png",
+            "Jane Foster": "https://thanosvibs.money/static/assets/items/artifact_thorjanefoster.png",
+            "Titana": "https://thanosvibs.money/static/assets/items/artifact_titania.png",
+            "Toxin": "https://thanosvibs.money/static/assets/items/artifact_toxin.png",
+            "US Agent": "https://thanosvibs.money/static/assets/items/artifact_usagent.png",
+            "Ulik": "https://thanosvibs.money/static/assets/items/artifact_ulik.png",
+            "Ultron": "https://thanosvibs.money/static/assets/items/artifact_ultron.png",
+            "Valeria Richards": "https://thanosvibs.money/static/assets/items/artifact_valeriarichards.png",
+            "Valkyrie": "https://thanosvibs.money/static/assets/items/artifact_valkyrie.png",
+            "Venom": "https://thanosvibs.money/static/assets/items/artifact_venom.png",
+            "Victorious": "https://thanosvibs.money/static/assets/items/artifact_victorious.png",
+            "Volstagg": "https://thanosvibs.money/static/assets/items/artifact_volstagg.png",
+            "Vulture": "https://thanosvibs.money/static/assets/items/artifact_vulture.png",
+            "War Machine": "https://thanosvibs.money/static/assets/items/artifact_warmachine.png",
+            "War Tiger": "https://thanosvibs.money/static/assets/items/artifact_wartiger.png",
+            "Warpath": "https://thanosvibs.money/static/assets/items/artifact_warpath.png",
+            "Wasp": "https://thanosvibs.money/static/assets/items/artifact_wasp.png",
+            "Wasp Nadia Van Dyne": "https://thanosvibs.money/static/assets/items/artifact_waspnadiavandyne.png",
+            "Wave": "https://thanosvibs.money/static/assets/items/artifact_wave.png",
+            "Weapon Hex": "https://thanosvibs.money/static/assets/items/artifact_weaponhex.png",
+            "Wenwu": "https://thanosvibs.money/static/assets/items/artifact_wenwu.png",
+            "White Fox": "https://thanosvibs.money/static/assets/items/artifact_whitefox.png",
+            "White Tiger": "https://thanosvibs.money/static/assets/items/artifact_whitetiger.png",
+            "Wiccan": "https://thanosvibs.money/static/assets/items/artifact_wiccan.png",
+            "Winter Soldier": "https://thanosvibs.money/static/assets/items/artifact_wintersoldier.png",
+            "Wolverine": "https://thanosvibs.money/static/assets/items/artifact_wolverine.png",
+            "Wong": "https://thanosvibs.money/static/assets/items/artifact_wong.png",
+            "X-23": "https://thanosvibs.money/static/assets/items/artifact_x23.png",
+            "Yelena Belova": "https://thanosvibs.money/static/assets/items/artifact_yelenabelova.png",
+            "Yondu": "https://thanosvibs.money/static/assets/items/artifact_yondu.png"
+        };
+
+        // Game state
+        let state = {
+            totalOpens: 0,
+            totalSpentCrystals: 0,
+            totalSpentEssence: 0,
+            history: [],
+            currentPull: null,
+            isOpening: false,
+            flipTimeouts: []
+        };
+
+        // DOM elements
+        const cardContainer = document.getElementById('card-container');
+        const openTenBtn = document.getElementById('open-ten');
+        const skipBtn = document.getElementById('skip');
+        const clearHistoryBtn = document.getElementById('clear-history');
+        const totalOpensEl = document.getElementById('total-opens');
+        const totalSpentEl = document.getElementById('total-spent');
+        const totalEssenceEl = document.getElementById('total-essence');
+        const historyList = document.getElementById('history-list');
+
+        // Probabilities
+        const probabilities = {
+            "LV.1 Artifact": 70,
+            "LV.2 Artifact": 24.57,
+            "LV.3 Artifact": 5,
+            "3 Star Character": 0.0011,
+            "4 Star Character": 0.0005,
+            "5 Star Character": 0.0003,
+            "6 Star Character": 0.0002
+        };
+
+        // Initialize the game
+        function init() {
+            loadState();
+            updateUI();
+            setupEventListeners();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            openTenBtn.addEventListener('click', openTenArtifacts);
+            skipBtn.addEventListener('click', skipAnimation);
+            clearHistoryBtn.addEventListener('click', clearHistory);
+        }
+
+        // Open 10 artifacts
+        function openTenArtifacts() {
+            if (state.isOpening) return;
+            
+            state.isOpening = true;
+            openTenBtn.disabled = true;
+            skipBtn.disabled = false;
+            
+            // Spend currency
+            state.totalSpentCrystals += 675;
+            state.totalSpentEssence += 250;
+            state.totalOpens++;
+            
+            // Clear previous cards and timeouts
+            cardContainer.innerHTML = '';
+            state.flipTimeouts.forEach(timeout => clearTimeout(timeout));
+            state.flipTimeouts = [];
+            
+            // Generate 10 artifacts
+            const results = [];
+            for (let i = 0; i < 10; i++) {
+                results.push(generateArtifact());
+            }
+            
+            // Store current pull for history
+            state.currentPull = {
+                number: state.totalOpens,
+                artifacts: results
+            };
+            
+            // Create cards with flip animation
+            results.forEach((artifact, index) => {
+                const card = createCard(artifact, index);
+                cardContainer.appendChild(card);
+                
+                // Flip card after a delay
+                const timeout = setTimeout(() => {
+                    card.classList.add('flipped');
+                    
+                    // Enable button after last card flips
+                    if (index === results.length - 1) {
+                        completePull();
+                    }
+                }, 100 + (index * 100));
+                
+                state.flipTimeouts.push(timeout);
+            });
+            
+            // Update UI and save state
+            updateUI();
+            saveState();
+        }
+
+        // Complete the pull process
+        function completePull() {
+            state.isOpening = false;
+            openTenBtn.disabled = false;
+            skipBtn.disabled = true;
+            
+            // Add to history
+            addToHistory();
+        }
+
+        // Skip the animation
+        function skipAnimation() {
+            if (!state.isOpening) return;
+            
+            // Clear all pending timeouts
+            state.flipTimeouts.forEach(timeout => clearTimeout(timeout));
+            state.flipTimeouts = [];
+            
+            // Flip all cards immediately
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.classList.add('flipped');
+            });
+            
+            // Complete the pull
+            completePull();
+        }
+
+        // Add current pull to history
+        function addToHistory() {
+            if (!state.currentPull) return;
+            
+            // Group duplicates
+            const artifactCounts = {};
+            state.currentPull.artifacts.forEach(artifact => {
+                const key = `${artifact.star} ${artifact.type}`;
+                artifactCounts[key] = (artifactCounts[key] || 0) + 1;
+            });
+            
+            // Create history entry
+            let historyEntry = `Pull ${state.currentPull.number}: `;
+            const entries = [];
+            
+            for (const [key, count] of Object.entries(artifactCounts)) {
+                entries.push(count > 1 ? `${count}x ${key}` : key);
+            }
+            
+            historyEntry += entries.join(', ');
+            
+            // Add to history
+            state.history.unshift(historyEntry);
+            if (state.history.length > 50) {
+                state.history = state.history.slice(0, 50);
+            }
+            
+            // Clear current pull
+            state.currentPull = null;
+            
+            // Update UI and save state
+            updateUI();
+            saveState();
+        }
+
+        // Generate a random artifact based on probabilities
+        function generateArtifact() {
+            const roll = Math.random() * 100;
+            let cumulative = 0;
+            
+            // Check for character artifacts first (very low probability)
+            if (roll < probabilities["6 Star Character"]) {
+                return getRandomCharacterArtifact(6);
+            } else if (roll < probabilities["6 Star Character"] + probabilities["5 Star Character"]) {
+                return getRandomCharacterArtifact(5);
+            } else if (roll < probabilities["6 Star Character"] + probabilities["5 Star Character"] + probabilities["4 Star Character"]) {
+                return getRandomCharacterArtifact(4);
+            } else if (roll < probabilities["6 Star Character"] + probabilities["5 Star Character"] + probabilities["4 Star Character"] + probabilities["3 Star Character"]) {
+                return getRandomCharacterArtifact(3);
+            }
+            
+            // Check for base artifacts
+            cumulative += probabilities["6 Star Character"] + probabilities["5 Star Character"] + probabilities["4 Star Character"] + probabilities["3 Star Character"];
+            
+            if (roll < cumulative + probabilities["LV.3 Artifact"]) {
+                return {
+                    type: "LV.3 Artifact",
+                    star: "3 Star",
+                    image: artifacts["LV.3 Artifact"]["3 Star"],
+                    isCharacter: false
+                };
+            }
+            
+            cumulative += probabilities["LV.3 Artifact"];
+            
+            if (roll < cumulative + probabilities["LV.2 Artifact"]) {
+                return {
+                    type: "LV.2 Artifact",
+                    star: "2 Star",
+                    image: artifacts["LV.2 Artifact"]["2 Star"],
+                    isCharacter: false
+                };
+            }
+            
+            // Default to LV.1 Artifact
+            return {
+                type: "LV.1 Artifact",
+                star: "1 Star",
+                image: artifacts["LV.1 Artifact"]["1 Star"],
+                isCharacter: false
+            };
+        }
+
+        // Get a random character artifact with specified star level
+        function getRandomCharacterArtifact(starLevel) {
+            const characterNames = Object.keys(artifacts).filter(name => !name.startsWith("LV."));
+            const randomName = characterNames[Math.floor(Math.random() * characterNames.length)];
+            
+            return {
+                type: randomName,
+                star: `${starLevel} Star`,
+                image: artifacts[randomName],
+                isCharacter: true
+            };
+        }
+
+        // Create a card element for an artifact
+        function createCard(artifact, index) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const cardInner = document.createElement('div');
+            cardInner.className = 'card-inner';
+            
+            const cardFront = document.createElement('div');
+            cardFront.className = 'card-front';
+            
+            const cardBack = document.createElement('div');
+            cardBack.className = 'card-back';
+            
+            const img = document.createElement('img');
+            img.src = artifact.image;
+            img.alt = artifact.type;
+            
+            const name = document.createElement('div');
+            name.className = 'card-name';
+            name.textContent = artifact.type;
+            
+            cardBack.appendChild(img);
+            cardBack.appendChild(name);
+            cardInner.appendChild(cardFront);
+            cardInner.appendChild(cardBack);
+            card.appendChild(cardInner);
+            
+            // Add halo for character artifacts
+            if (artifact.isCharacter) {
+                const halo = document.createElement('div');
+                halo.className = 'halo';
+                
+                if (artifact.star === '3 Star') {
+                    halo.classList.add('blue');
+                } else if (artifact.star === '4 Star') {
+                    halo.classList.add('purple');
+                } else if (artifact.star === '5 Star') {
+                    halo.classList.add('gold');
+                } else if (artifact.star === '6 Star') {
+                    halo.classList.add('red');
+                }
+                
+                card.appendChild(halo);
+            }
+            
+            return card;
+        }
+
+        // Update the UI with current state
+        function updateUI() {
+            totalOpensEl.textContent = state.totalOpens;
+            totalSpentEl.textContent = state.totalSpentCrystals.toLocaleString();
+            totalEssenceEl.textContent = state.totalSpentEssence.toLocaleString();
+            
+            // Update history list
+            historyList.innerHTML = '';
+            state.history.forEach((entry, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.textContent = entry;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // Clear history
+        function clearHistory() {
+            state.history = [];
+            updateUI();
+            saveState();
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('artifactSimulatorState', JSON.stringify(state));
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            const saved = localStorage.getItem('artifactSimulatorState');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // Merge with default state to ensure all properties exist
+                    state = {
+                        ...state,
+                        ...parsed
+                    };
+                } catch (e) {
+                    console.error('Failed to load state', e);
+                }
+            }
+        }
+
+        // Initialize the game when the page loads
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
