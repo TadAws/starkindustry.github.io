@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CTP Chest Opener</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #f8d64e;
+    }
+
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background: #f8d64e;
+  transform: scale(1.05);
+color: black;
+}
+    button {
+      background: #f8d64e;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #ffeb3b;
+      transform: scale(1.05);
+    }
+    button:disabled {
+      background: #555;
+      color: #888;
+      cursor: not-allowed;
+    }
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .stat-box {
+      background: #222;
+      padding: 10px 15px;
+      border-radius: 8px;
+      min-width: 120px;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      max-width: 800px;
+      margin: 20px auto;
+    }
+    .card {
+      width: 120px;
+      height: 160px;
+      perspective: 1000px;
+      margin: 0 auto;
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.9s;
+      transform-style: preserve-3d;
+      position: relative;
+    }
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+    }
+    .card-front {
+      background: #1a1a1a;
+      border: 2px solid #333;
+    }
+    .card-back {
+      background: #1a1a1a;
+      border: 2px solid #444;
+      transform: rotateY(180deg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+    .card-back img {
+      max-width: 90%;
+      max-height: 70%;
+      margin-bottom: 5px;
+    }
+    .card-name {
+      font-size: 12px;
+      text-align: center;
+      word-break: break-word;
+    }
+    .ctp-glow {
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      border-radius: 11px;
+      z-index: -1;
+      background: radial-gradient(circle, rgba(255,215,0,0.7) 0%, rgba(255,215,0,0) 70%);
+      box-shadow: 0 0 15px rgba(255,215,0,0.7);
+      display: none;
+    }
+    #history {
+      max-height: 300px;
+      overflow-y: auto;
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      max-width: 800px;
+      margin: 20px auto;
+      text-align: left;
+    }
+    .history-item {
+      padding: 5px 0;
+      border-bottom: 1px solid #444;
+    }
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    .ctp-highlight {
+      color: #f8d64e;
+      font-weight: bold;
+    }
+    #controls {
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>CTP Chest Simulator</h1>
+  
+  <div class="stats">
+    <div class="stat-box">Total Pulls: <span id="total-pulls">0</span></div>
+    <div class="stat-box">Pity: <span id="pity-count">0</span>/100</div>
+    <div class="stat-box">CTPs Obtained: <span id="ctp-count">0</span></div>
+  </div>
+
+<button class="back-button" onclick="window.location.href='index.html'">← Back</button>
+  
+  <button id="pull-button">Open x10 (675 Crystals)</button>
+  <button id="clear-button">Clear History</button>
+
+  <div id="controls"></div>
+  <div id="card-container" class="card-grid"></div>
+  
+  <h2>History</h2>
+  <div id="history"></div>
+
+  <script>
+    // Game Data
+    const items = {
+      obelisks: [
+        { name: "1★ Obelisk", chance: 59.5, img: "https://media.discordapp.net/attachments/1229727479170863146/1377303402438197381/image_2025-05-28_204143326.png?ex=68387940&is=683727c0&hm=38cf9c36abd4a7c70c3980fb3ac0680a10ea6e70b7e87b8d5161555fce2a91d3&=&format=webp&quality=lossless" },
+        { name: "2★ Obelisk", chance: 30, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300490877927544/image_2025-05-28_202918363.png?ex=6838768a&is=6837250a&hm=98cd9aaa7eb57706b291eff19eded0aa5df59449a062396dc4db1d633faa879d&=&format=webp&quality=lossless" },
+        { name: "3★ Obelisk", chance: 5, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300491133784165/image_2025-05-28_202937443.png?ex=6838768a&is=6837250a&hm=97ba2e86da28a0c24d170fb90497945760ab558226ef570a06f665228898a140&=&format=webp&quality=lossless" },
+        { name: "4★ Obelisk", chance: 2.5, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300491418992722/image_2025-05-28_202943180.png?ex=6838768a&is=6837250a&hm=5863f44180ec2944fa0ae01f99114723910055cc7f0746e50e51b949c2b0d465&=&format=webp&quality=lossless" },
+        { name: "5★ Obelisk", chance: 1.25, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300491658199061/image_2025-05-28_202955228.png?ex=6838768a&is=6837250a&hm=c0be6b08fe0347008ee296490aaf342d72944fece676425132aa3509076e1881&=&format=webp&quality=lossless" },
+        { name: "6★ Obelisk", chance: 0.25, img: "https://media.discordapp.net/attachments/1229727479170863146/1377300491914186812/image_2025-05-28_203002058.png?ex=6838768a&is=6837250a&hm=229d230842eecca9500262ef30d58c3c9951e1518b7d803f64ee15059794a419&=&format=webp&quality=lossless" }
+      ],
+      ctps: [
+        { name: "CTP Of Authority", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_authority.png" },
+        { name: "CTP Of Energy", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_energy.png" },
+        { name: "CTP Of Destruction", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_destruction.png" },
+        { name: "CTP Of Refinement", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_refinement.png" },
+        { name: "CTP Of Regeneration", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_regeneration.png" },
+        { name: "CTP Of Rage", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_rage.png" },
+        { name: "CTP Of Judgement", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_judgement.png" },
+        { name: "CTP Of Greed", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_greed.png" },
+        { name: "CTP Of Insight", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_insight.png" },
+        { name: "CTP Of Conquest", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_conquest.png" },
+        { name: "CTP Of Liberation", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_liberation.png" },
+        { name: "CTP Of Patience", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_patience.png" },
+        { name: "CTP Of Transcendence", chance: 0.05, img: "https://thanosvibs.money/static/assets/items/ctp_transcendence.png" },
+        { name: "CTP Of Veteran", chance: 0.0005, img: "https://thanosvibs.money/static/assets/items/ctp_veteran.png" }
+      ]
+    };
+
+    // Game State
+    const state = {
+      totalPulls: 0,
+      pityCount: 0,
+      ctpsObtained: 0,
+      history: [],
+      isPulling: false,
+      currentPull: null,
+      flipTimeouts: [],
+      frozenPity: 0 // Stores pity count during animation
+    };
+
+    // DOM Elements
+    const elements = {
+      totalPulls: document.getElementById('total-pulls'),
+      pityCount: document.getElementById('pity-count'),
+      ctpCount: document.getElementById('ctp-count'),
+      pullButton: document.getElementById('pull-button'),
+      clearButton: document.getElementById('clear-button'),
+      controls: document.getElementById('controls'),
+      cardContainer: document.getElementById('card-container'),
+      history: document.getElementById('history')
+    };
+
+    // Initialize
+    loadState();
+    setupEventListeners();
+    updateUI();
+
+    function setupEventListeners() {
+      elements.pullButton.addEventListener('click', startPull);
+      elements.clearButton.addEventListener('click', clearHistory);
+    }
+
+    function startPull() {
+      if (state.isPulling) return;
+      
+      state.isPulling = true;
+      state.frozenPity = state.pityCount; // Freeze current pity
+      state.currentPull = {
+        items: [],
+        ctpItems: [], // NEW: Track actual CTPs obtained
+        startPull: state.totalPulls + 1,
+        historyAdded: false
+      };
+      
+      // Clear previous cards and timeouts
+      elements.cardContainer.innerHTML = '';
+      elements.controls.innerHTML = '';
+      clearAllTimeouts();
+      
+      // Add skip button
+      const skipBtn = document.createElement('button');
+      skipBtn.textContent = 'Skip Animation';
+      skipBtn.addEventListener('click', skipAnimation);
+      elements.controls.appendChild(skipBtn);
+      
+      // Generate 10 items
+      let foundCTP = false;
+      for (let i = 0; i < 10; i++) {
+        state.totalPulls++;
+        
+        let item;
+        const needsPity = state.frozenPity >= 90 && !foundCTP;
+        
+        if (needsPity) {
+          // Force CTP through pity system
+          item = getRandomCTP();
+          foundCTP = true;
+          state.currentPull.ctpItems.push(item);
+        } else {
+          // Normal pull
+          item = getRandomItem();
+          if (isCTP(item)) {
+            foundCTP = true;
+            state.currentPull.ctpItems.push(item);
+          }
+        }
+        
+        state.currentPull.items.push(item);
+        createCard(item, i);
+      }
+      
+      // Update end pull number
+      state.currentPull.endPull = state.totalPulls;
+      
+      updateUI();
+      saveState();
+    }
+
+    function createCard(item, index) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.id = `card-${index}`;
+      
+      const inner = document.createElement('div');
+      inner.className = 'card-inner';
+      
+      const front = document.createElement('div');
+      front.className = 'card-front';
+      
+      const back = document.createElement('div');
+      back.className = 'card-back';
+      
+      const img = document.createElement('img');
+      img.src = item.img;
+      img.alt = item.name;
+      
+      const name = document.createElement('div');
+      name.className = 'card-name';
+      name.textContent = item.name;
+      
+      back.appendChild(img);
+      back.appendChild(name);
+      inner.appendChild(front);
+      inner.appendChild(back);
+      card.appendChild(inner);
+      
+      if (isCTP(item)) {
+        const glow = document.createElement('div');
+        glow.className = 'ctp-glow';
+        card.appendChild(glow);
+      }
+      
+      elements.cardContainer.appendChild(card);
+      
+      // Animate with delay
+      const timeout = setTimeout(() => {
+        card.classList.add('flipped');
+        if (isCTP(item)) {
+          const glow = card.querySelector('.ctp-glow');
+          if (glow) glow.style.display = 'block';
+        }
+        
+        // Check if all cards are flipped
+        if (index === 9) {
+          completePull();
+        }
+      }, index * 200);
+      
+      state.flipTimeouts.push(timeout);
+    }
+
+    function completePull() {
+      // Update counts after animation completes
+      if (state.currentPull.ctpItems.length > 0) {
+        state.pityCount = 0;
+        state.ctpsObtained += state.currentPull.ctpItems.length;
+      } else {
+        state.pityCount = Math.min(state.frozenPity + 10, 100);
+      }
+      
+      state.isPulling = false;
+      addToHistory();
+      updateUI();
+    }
+
+    function skipAnimation() {
+      if (!state.isPulling || !state.currentPull) return;
+      
+      // Flip all cards immediately
+      for (let i = 0; i < 10; i++) {
+        const card = document.getElementById(`card-${i}`);
+        if (card && !card.classList.contains('flipped')) {
+          card.classList.add('flipped');
+          const glow = card.querySelector('.ctp-glow');
+          if (glow) glow.style.display = 'block';
+        }
+      }
+      
+      completePull();
+    }
+
+    function addToHistory() {
+      if (!state.currentPull || state.currentPull.historyAdded) return;
+      
+      state.currentPull.historyAdded = true;
+      
+      // Group items by name (only count actual obtained items)
+      const itemCounts = {};
+      state.currentPull.items.forEach(item => {
+        itemCounts[item.name] = (itemCounts[item.name] || 0) + 1;
+      });
+      
+      // Create history entry
+      const itemsText = Object.entries(itemCounts)
+        .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
+        .join(', ');
+      
+      const entry = `Pull ${state.currentPull.startPull}-${state.currentPull.endPull}: ${itemsText}`;
+      
+      // Add to history
+      state.history.unshift(entry);
+      if (state.currentPull.ctpItems.length > 0) {
+        state.history.unshift(`>>> Obtained ${state.currentPull.ctpItems.length} CTP(s)!`);
+      }
+      
+      // Limit history size
+      if (state.history.length > 50) {
+        state.history = state.history.slice(0, 50);
+      }
+      
+      updateUI();
+      saveState();
+    }
+
+    function clearAllTimeouts() {
+      state.flipTimeouts.forEach(clearTimeout);
+      state.flipTimeouts = [];
+    }
+
+    function getRandomItem() {
+      const allItems = [...items.obelisks, ...items.ctps];
+      const roll = Math.random() * 100;
+      let sum = 0;
+      
+      for (const item of allItems) {
+        sum += item.chance;
+        if (roll <= sum) {
+          return item;
+        }
+      }
+      
+      return items.obelisks[0]; // Fallback
+    }
+
+    function getRandomCTP() {
+      return items.ctps[Math.floor(Math.random() * items.ctps.length)];
+    }
+
+    function isCTP(item) {
+      return item.name.includes("CTP");
+    }
+
+    function clearHistory() {
+      if (confirm("Clear all history and statistics?")) {
+        state.totalPulls = 0;
+        state.pityCount = 0;
+        state.ctpsObtained = 0;
+        state.history = [];
+        elements.cardContainer.innerHTML = '';
+        elements.controls.innerHTML = '';
+        updateUI();
+        saveState();
+      }
+    }
+
+    function updateUI() {
+      // Show frozen pity during animation, actual pity after
+      const displayPity = state.isPulling ? state.frozenPity : state.pityCount;
+      
+      elements.totalPulls.textContent = state.totalPulls;
+      elements.pityCount.textContent = displayPity;
+      elements.ctpCount.textContent = state.ctpsObtained;
+      
+      // Update history display
+      elements.history.innerHTML = state.history.map(entry => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        if (entry.startsWith(">>>")) {
+          div.classList.add('ctp-highlight');
+        }
+        div.textContent = entry;
+        return div.outerHTML;
+      }).join('');
+      
+      // Update button states
+      elements.pullButton.disabled = state.isPulling;
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem('ctpSimulatorState');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          state.totalPulls = parsed.totalPulls || 0;
+          state.pityCount = parsed.pityCount || 0;
+          state.ctpsObtained = parsed.ctpsObtained || 0;
+          state.history = parsed.history || [];
+        } catch (e) {
+          console.error('Failed to load state', e);
+        }
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('ctpSimulatorState', JSON.stringify({
+        totalPulls: state.totalPulls,
+        pityCount: state.pityCount,
+        ctpsObtained: state.ctpsObtained,
+        history: state.history
+      }));
+    }
+  </script>
+</body>
+</html>
