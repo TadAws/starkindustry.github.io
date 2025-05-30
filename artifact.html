@@ -3,47 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marvel Future Fight Artifact Simulator</title>
+    <title>Artifact Simulator</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #121212;
-            color: #fff;
+            color: white;
             margin: 0;
             padding: 20px;
             text-align: center;
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
-        }
-        
-        h1 {
-            color: #f8d64e;
-            margin-bottom: 10px;
         }
         
         .controls {
             margin: 20px 0;
             display: flex;
+            flex-wrap: wrap;
             justify-content: center;
             gap: 10px;
         }
         
         button {
             background-color: #f8d64e;
-            color: #000;
+            color: black;
             border: none;
             padding: 10px 20px;
             border-radius: 5px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: transform 0.2s;
         }
         
         button:hover:not(:disabled) {
-            background-color: #ffeb3b;
             transform: scale(1.05);
         }
         
@@ -72,29 +67,25 @@
   transform: scale(1.05);
 color: black;
 }
-
         
         .card-container {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
-            margin: 30px auto;
-            max-width: 800px;
+            gap: 10px;
+            margin: 20px auto;
         }
         
         .card {
-            position: relative;
-            width: 150px;
-            height: 200px;
+            height: 160px;
             perspective: 1000px;
-            margin: 0 auto;
+            position: relative;
         }
         
         .card-inner {
             position: relative;
             width: 100%;
             height: 100%;
-            transition: transform 0.8s;
+            transition: transform 0.6s;
             transform-style: preserve-3d;
         }
         
@@ -108,9 +99,10 @@ color: black;
             height: 100%;
             backface-visibility: hidden;
             border-radius: 10px;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
         
         .card-front {
@@ -119,37 +111,38 @@ color: black;
         }
         
         .card-back {
-            transform: rotateY(180deg);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
             background-color: #1a1a1a;
             border: 2px solid #444;
+            transform: rotateY(180deg);
         }
         
-        .card-back img {
-            max-width: 90%;
+        .card img {
+            max-width: 80%;
             max-height: 70%;
-            margin-bottom: 5px;
         }
         
         .card-name {
             font-size: 12px;
-            text-align: center;
+            margin-top: 5px;
             padding: 0 5px;
             word-break: break-word;
-            margin-top: 5px;
         }
         
+        /* Halo effects */
         .halo {
             position: absolute;
             top: -5px;
             left: -5px;
             right: -5px;
             bottom: -5px;
-            border-radius: 15px;
+            border-radius: 10px;
             z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .card.flipped .halo {
+            opacity: 1;
         }
         
         .halo.blue {
@@ -162,7 +155,7 @@ color: black;
             box-shadow: 0 0 15px rgba(156,39,176,0.7);
         }
         
-        .halo.gold {
+        .halo.yellow {
             background: radial-gradient(circle, rgba(255,215,0,0.7) 0%, rgba(255,215,0,0) 70%);
             box-shadow: 0 0 15px rgba(255,215,0,0.7);
         }
@@ -172,46 +165,124 @@ color: black;
             box-shadow: 0 0 15px rgba(255,0,0,0.7);
         }
         
-        .stats {
-            margin-top: 30px;
+        .stats, .history {
             background-color: #222;
             padding: 15px;
             border-radius: 10px;
+            margin: 20px 0;
         }
         
         .history {
-            margin-top: 30px;
             max-height: 300px;
             overflow-y: auto;
-            background-color: #222;
-            padding: 15px;
-            border-radius: 10px;
             text-align: left;
         }
         
-        .history-item {
-            padding: 5px 0;
-            border-bottom: 1px solid #444;
+        .rarity-legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
         
-        .history-item:last-child {
-            border-bottom: none;
+        .rarity-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
         }
         
-        .rarity-3 {
-            color: #00b4ff;
+        .rarity-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
         }
         
-        .rarity-4 {
-            color: #9c27b0;
+        /* Collection Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 100;
+            overflow-y: auto;
         }
         
-        .rarity-5 {
-            color: #f8d64e;
+        .modal-content {
+            background-color: #222;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 800px;
         }
         
-        .rarity-6 {
-            color: #ff0000;
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: white;
+        }
+        
+        .collection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .collection-item {
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .collection-item.uncollected {
+            opacity: 0.5;
+        }
+        
+        .collection-item img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .collection-item-name {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 600px) {
+            .card-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .modal-content {
+                width: 90%;
+                margin: 10px auto;
+            }
+            
+            .collection-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
     </style>
 </head>
@@ -221,20 +292,40 @@ color: black;
         
         <div class="stats">
             <p>Total Opens: <span id="total-opens">0</span> (x10)</p>
-            <p>Total Spent: <span id="total-spent">0</span> Crystals / <span id="total-essence">0</span> Celestial Essence</p>
-        </div>
+            <p>Pity Counter: <span id="pity-counter">0</span>/20</p>
+            <p>Artifacts Collected: <span id="collection-count">0</span>/<span id="total-artifacts">0</span></p>
+            <p>Total Spent: <span id="total-gems">0</span> Gems / <span id="total-essence">0</span> Celestial Essence</p>
 
 <button class="back-button" onclick="window.location.href='index.html'">← Back</button>
+            
+            <div class="rarity-legend">
+                <div class="rarity-item">
+                    <div class="rarity-color" style="background: #00b4ff;"></div>
+                    <span>3★ Character</span>
+                </div>
+                <div class="rarity-item">
+                    <div class="rarity-color" style="background: #9c27b0;"></div>
+                    <span>4★ Character</span>
+                </div>
+                <div class="rarity-item">
+                    <div class="rarity-color" style="background: #ffd700;"></div>
+                    <span>5★ Character</span>
+                </div>
+                <div class="rarity-item">
+                    <div class="rarity-color" style="background: #ff0000;"></div>
+                    <span>6★ Character</span>
+                </div>
+            </div>
+        </div>
         
         <div class="controls">
-            <button id="open-ten">Open x10 (675 Crystals/250 Celestial Essence)</button>
+            <button id="open-ten">Open x10 (675 Gems/250 CE)</button>
             <button id="skip" disabled>Skip Animation</button>
             <button id="clear-history">Clear History</button>
+            <button id="view-collection">View Collection</button>
         </div>
         
-        <div class="card-container" id="card-container">
-            <!-- Cards will be generated here -->
-        </div>
+        <div class="card-container" id="card-container"></div>
         
         <div class="history">
             <h3>History</h3>
@@ -242,8 +333,17 @@ color: black;
         </div>
     </div>
 
+    <!-- Collection Modal -->
+    <div id="collection-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Artifact Collection</h2>
+            <div id="collection-display" class="collection-grid"></div>
+        </div>
+    </div>
+
     <script>
-        // Artifact data - complete list
+        // Sample artifact data
         const artifacts = {
             // Base artifacts
             "LV.1 Artifact": {
@@ -484,50 +584,68 @@ color: black;
             "Yondu": "https://thanosvibs.money/static/assets/items/artifact_yondu.png"
         };
 
+
         // Game state
-        let state = {
+        const state = {
             totalOpens: 0,
-            totalSpentCrystals: 0,
-            totalSpentEssence: 0,
+            pityCounter: 0,
             history: [],
-            currentPull: null,
             isOpening: false,
-            flipTimeouts: []
+            flipTimeouts: [],
+            collection: {},
+            totalGemsSpent: 0,
+            totalEssenceSpent: 0,
+            characterArtifacts: Object.keys(artifacts).filter(name => !name.startsWith("LV.")),
+            pullComplete: true,
+            pendingPityUpdate: 0,
+            pendingCollectionUpdates: []
         };
 
         // DOM elements
-        const cardContainer = document.getElementById('card-container');
-        const openTenBtn = document.getElementById('open-ten');
-        const skipBtn = document.getElementById('skip');
-        const clearHistoryBtn = document.getElementById('clear-history');
-        const totalOpensEl = document.getElementById('total-opens');
-        const totalSpentEl = document.getElementById('total-spent');
-        const totalEssenceEl = document.getElementById('total-essence');
-        const historyList = document.getElementById('history-list');
-
-        // Probabilities
-        const probabilities = {
-            "LV.1 Artifact": 70,
-            "LV.2 Artifact": 24.57,
-            "LV.3 Artifact": 5,
-            "3 Star Character": 0.0011,
-            "4 Star Character": 0.0005,
-            "5 Star Character": 0.0003,
-            "6 Star Character": 0.0002
+        const elements = {
+            cardContainer: document.getElementById('card-container'),
+            openTenBtn: document.getElementById('open-ten'),
+            skipBtn: document.getElementById('skip'),
+            clearHistoryBtn: document.getElementById('clear-history'),
+            viewCollectionBtn: document.getElementById('view-collection'),
+            totalOpensEl: document.getElementById('total-opens'),
+            pityCounterEl: document.getElementById('pity-counter'),
+            historyList: document.getElementById('history-list'),
+            collectionCountEl: document.getElementById('collection-count'),
+            totalArtifactsEl: document.getElementById('total-artifacts'),
+            totalGemsEl: document.getElementById('total-gems'),
+            totalEssenceEl: document.getElementById('total-essence'),
+            collectionModal: document.getElementById('collection-modal'),
+            collectionDisplay: document.getElementById('collection-display'),
+            closeModal: document.querySelector('.close')
         };
 
         // Initialize the game
         function init() {
+            // Initialize collection
+            state.characterArtifacts.forEach(character => {
+                state.collection[character] = state.collection[character] || 0;
+            });
+            
+            setupEventListeners();
             loadState();
             updateUI();
-            setupEventListeners();
+            elements.totalArtifactsEl.textContent = state.characterArtifacts.length;
         }
 
         // Set up event listeners
         function setupEventListeners() {
-            openTenBtn.addEventListener('click', openTenArtifacts);
-            skipBtn.addEventListener('click', skipAnimation);
-            clearHistoryBtn.addEventListener('click', clearHistory);
+            elements.openTenBtn.addEventListener('click', openTenArtifacts);
+            elements.skipBtn.addEventListener('click', skipAnimation);
+            elements.clearHistoryBtn.addEventListener('click', clearHistory);
+            elements.viewCollectionBtn.addEventListener('click', showCollection);
+            elements.closeModal.addEventListener('click', () => elements.collectionModal.style.display = 'none');
+            
+            window.addEventListener('click', (event) => {
+                if (event.target === elements.collectionModal) {
+                    elements.collectionModal.style.display = 'none';
+                }
+            });
         }
 
         // Open 10 artifacts
@@ -535,91 +653,230 @@ color: black;
             if (state.isOpening) return;
             
             state.isOpening = true;
-            openTenBtn.disabled = true;
-            skipBtn.disabled = false;
+            state.pullComplete = false;
+            elements.openTenBtn.disabled = true;
+            elements.skipBtn.disabled = false;
             
-            // Spend currency
-            state.totalSpentCrystals += 675;
-            state.totalSpentEssence += 250;
+            // Track spending (these update immediately)
+            state.totalGemsSpent += 675;
+            state.totalEssenceSpent += 250;
             state.totalOpens++;
             
-            // Clear previous cards and timeouts
-            cardContainer.innerHTML = '';
-            state.flipTimeouts.forEach(timeout => clearTimeout(timeout));
-            state.flipTimeouts = [];
+            // Store current pity counter before any changes
+            const startingPity = state.pityCounter;
+            state.pendingPityUpdate = 0;
+            state.pendingCollectionUpdates = [];
             
-            // Generate 10 artifacts
+            // Clear previous cards
+            elements.cardContainer.innerHTML = '';
+            clearTimeouts();
+            
+            // Generate artifacts
             const results = [];
-            for (let i = 0; i < 10; i++) {
-                results.push(generateArtifact());
+            let gotCharacter = false;
+            
+            // First 5 cards (top row)
+            for (let i = 0; i < 5; i++) {
+                const artifact = generateArtifact();
+                results.push(artifact);
+                if (artifact.isCharacter) {
+                    gotCharacter = true;
+                    state.pendingCollectionUpdates.push(artifact.characterName);
+                }
             }
             
-            // Store current pull for history
+            // Second 5 cards (bottom row)
+            for (let i = 0; i < 5; i++) {
+                // Check for pity on the 6th card (first of second row)
+                if (i === 0 && state.pityCounter >= 20) {
+                    const pityArtifact = generateCharacterArtifact();
+                    pityArtifact.isPity = true;
+                    results.push(pityArtifact);
+                    gotCharacter = true;
+                    state.pendingPityUpdate = -state.pityCounter; // Will reset to 0
+                    state.pendingCollectionUpdates.push(pityArtifact.characterName);
+                } else {
+                    const artifact = generateArtifact();
+                    results.push(artifact);
+                    if (artifact.isCharacter) {
+                        gotCharacter = true;
+                        state.pendingCollectionUpdates.push(artifact.characterName);
+                    }
+                }
+            }
+            
+            // Calculate pity changes (but don't apply yet)
+            if (!gotCharacter) {
+                state.pendingPityUpdate = 1; // Increment by 1
+            } else {
+                state.pendingPityUpdate = -startingPity; // Reset to 0
+            }
+            
+            // Create and flip cards
+            createCards(results);
+            
+            // Store for history
             state.currentPull = {
                 number: state.totalOpens,
-                artifacts: results
+                artifacts: results,
+                hasPity: startingPity >= 20 && gotCharacter
             };
             
-            // Create cards with flip animation
-            results.forEach((artifact, index) => {
-                const card = createCard(artifact, index);
-                cardContainer.appendChild(card);
+            // Update UI (without updating pity or collection yet)
+            updateUI(false);
+            saveState();
+        }
+
+        // Generate a random artifact
+        function generateArtifact() {
+            const roll = Math.random();
+            
+            if (roll < 0.7) {
+                return {
+                    type: "LV.1 Artifact",
+                    star: "1 Star",
+                    image: artifacts["LV.1 Artifact"]["1 Star"],
+                    isCharacter: false
+                };
+            } else if (roll < 0.95) {
+                return {
+                    type: "LV.2 Artifact",
+                    star: "2 Star",
+                    image: artifacts["LV.2 Artifact"]["2 Star"],
+                    isCharacter: false
+                };
+            } else if (roll < 0.99) {
+                return {
+                    type: "LV.3 Artifact",
+                    star: "3 Star",
+                    image: artifacts["LV.3 Artifact"]["3 Star"],
+                    isCharacter: false
+                };
+            } else {
+                return generateCharacterArtifact(3 + Math.floor(Math.random() * 4)); // 3-6 stars
+            }
+        }
+
+        // Generate character artifact with specific star level
+        function generateCharacterArtifact(starLevel = 3) {
+            const randomChar = state.characterArtifacts[Math.floor(Math.random() * state.characterArtifacts.length)];
+            
+            return {
+                type: randomChar,
+                star: `${starLevel} Star`,
+                image: artifacts[randomChar],
+                isCharacter: true,
+                starLevel: starLevel,
+                characterName: randomChar
+            };
+        }
+
+        // Create card elements
+        function createCards(artifacts) {
+            artifacts.forEach((artifact, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
                 
-                // Flip card after a delay
+                const cardInner = document.createElement('div');
+                cardInner.className = 'card-inner';
+                
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-front';
+                
+                const cardBack = document.createElement('div');
+                cardBack.className = 'card-back';
+                
+                const img = document.createElement('img');
+                img.src = artifact.image;
+                img.alt = artifact.type;
+                
+                const name = document.createElement('div');
+                name.className = 'card-name';
+                name.textContent = artifact.type;
+                
+                cardBack.appendChild(img);
+                cardBack.appendChild(name);
+                cardInner.appendChild(cardFront);
+                cardInner.appendChild(cardBack);
+                card.appendChild(cardInner);
+                
+                // Add halo for character artifacts
+                if (artifact.isCharacter) {
+                    const halo = document.createElement('div');
+                    halo.className = 'halo';
+                    
+                    if (artifact.starLevel === 3) halo.classList.add('blue');
+                    else if (artifact.starLevel === 4) halo.classList.add('purple');
+                    else if (artifact.starLevel === 5) halo.classList.add('yellow');
+                    else if (artifact.starLevel === 6) halo.classList.add('red');
+                    
+                    card.appendChild(halo);
+                }
+                
+                elements.cardContainer.appendChild(card);
+                
+                // Flip card after delay
                 const timeout = setTimeout(() => {
                     card.classList.add('flipped');
                     
-                    // Enable button after last card flips
-                    if (index === results.length - 1) {
+                    // Complete after last card
+                    if (index === artifacts.length - 1) {
                         completePull();
                     }
                 }, 100 + (index * 100));
                 
                 state.flipTimeouts.push(timeout);
             });
-            
-            // Update UI and save state
-            updateUI();
-            saveState();
         }
 
-        // Complete the pull process
+        // Complete the pull
         function completePull() {
             state.isOpening = false;
-            openTenBtn.disabled = false;
-            skipBtn.disabled = true;
+            state.pullComplete = true;
+            elements.openTenBtn.disabled = false;
+            elements.skipBtn.disabled = true;
+            
+            // Apply pending updates
+            state.pityCounter += state.pendingPityUpdate;
+            state.pendingCollectionUpdates.forEach(character => {
+                state.collection[character] = (state.collection[character] || 0) + 1;
+            });
+            
+            // Clear pending updates
+            state.pendingPityUpdate = 0;
+            state.pendingCollectionUpdates = [];
             
             // Add to history
             addToHistory();
+            updateUI(true);
+            saveState();
         }
 
-        // Skip the animation
+        // Skip animation
         function skipAnimation() {
             if (!state.isOpening) return;
             
-            // Clear all pending timeouts
-            state.flipTimeouts.forEach(timeout => clearTimeout(timeout));
-            state.flipTimeouts = [];
+            clearTimeouts();
             
-            // Flip all cards immediately
-            const cards = document.querySelectorAll('.card');
-            cards.forEach(card => {
+            document.querySelectorAll('.card').forEach(card => {
                 card.classList.add('flipped');
             });
             
-            // Complete the pull
             completePull();
         }
 
-        // Add current pull to history
+        // Add to history
         function addToHistory() {
             if (!state.currentPull) return;
             
-            // Group duplicates
+            // Count duplicates and track pity artifacts
             const artifactCounts = {};
+            let hasPity = false;
+            
             state.currentPull.artifacts.forEach(artifact => {
                 const key = `${artifact.star} ${artifact.type}`;
                 artifactCounts[key] = (artifactCounts[key] || 0) + 1;
+                if (artifact.isPity) hasPity = true;
             });
             
             // Create history entry
@@ -627,181 +884,156 @@ color: black;
             const entries = [];
             
             for (const [key, count] of Object.entries(artifactCounts)) {
-                entries.push(count > 1 ? `${count}x ${key}` : key);
+                entries.push(count > 1 ? `${key} ×${count}` : key);
             }
             
             historyEntry += entries.join(', ');
             
-            // Add to history
+            // Only show pity if we actually got a pity artifact
+            if (hasPity) {
+                historyEntry += " (Pity)";
+            }
+            
+            const entryElement = document.createElement('div');
+            entryElement.textContent = historyEntry;
+            
+            elements.historyList.prepend(entryElement);
             state.history.unshift(historyEntry);
-            if (state.history.length > 50) {
-                state.history = state.history.slice(0, 50);
+            
+            if (state.history.length > 20) {
+                state.history.pop();
+                elements.historyList.removeChild(elements.historyList.lastChild);
             }
             
-            // Clear current pull
             state.currentPull = null;
-            
-            // Update UI and save state
-            updateUI();
-            saveState();
-        }
-
-        // Generate a random artifact based on probabilities
-        function generateArtifact() {
-            const roll = Math.random() * 100;
-            let cumulative = 0;
-            
-            // Check for character artifacts first (very low probability)
-            if (roll < probabilities["6 Star Character"]) {
-                return getRandomCharacterArtifact(6);
-            } else if (roll < probabilities["6 Star Character"] + probabilities["5 Star Character"]) {
-                return getRandomCharacterArtifact(5);
-            } else if (roll < probabilities["6 Star Character"] + probabilities["5 Star Character"] + probabilities["4 Star Character"]) {
-                return getRandomCharacterArtifact(4);
-            } else if (roll < probabilities["6 Star Character"] + probabilities["5 Star Character"] + probabilities["4 Star Character"] + probabilities["3 Star Character"]) {
-                return getRandomCharacterArtifact(3);
-            }
-            
-            // Check for base artifacts
-            cumulative += probabilities["6 Star Character"] + probabilities["5 Star Character"] + probabilities["4 Star Character"] + probabilities["3 Star Character"];
-            
-            if (roll < cumulative + probabilities["LV.3 Artifact"]) {
-                return {
-                    type: "LV.3 Artifact",
-                    star: "3 Star",
-                    image: artifacts["LV.3 Artifact"]["3 Star"],
-                    isCharacter: false
-                };
-            }
-            
-            cumulative += probabilities["LV.3 Artifact"];
-            
-            if (roll < cumulative + probabilities["LV.2 Artifact"]) {
-                return {
-                    type: "LV.2 Artifact",
-                    star: "2 Star",
-                    image: artifacts["LV.2 Artifact"]["2 Star"],
-                    isCharacter: false
-                };
-            }
-            
-            // Default to LV.1 Artifact
-            return {
-                type: "LV.1 Artifact",
-                star: "1 Star",
-                image: artifacts["LV.1 Artifact"]["1 Star"],
-                isCharacter: false
-            };
-        }
-
-        // Get a random character artifact with specified star level
-        function getRandomCharacterArtifact(starLevel) {
-            const characterNames = Object.keys(artifacts).filter(name => !name.startsWith("LV."));
-            const randomName = characterNames[Math.floor(Math.random() * characterNames.length)];
-            
-            return {
-                type: randomName,
-                star: `${starLevel} Star`,
-                image: artifacts[randomName],
-                isCharacter: true
-            };
-        }
-
-        // Create a card element for an artifact
-        function createCard(artifact, index) {
-            const card = document.createElement('div');
-            card.className = 'card';
-            
-            const cardInner = document.createElement('div');
-            cardInner.className = 'card-inner';
-            
-            const cardFront = document.createElement('div');
-            cardFront.className = 'card-front';
-            
-            const cardBack = document.createElement('div');
-            cardBack.className = 'card-back';
-            
-            const img = document.createElement('img');
-            img.src = artifact.image;
-            img.alt = artifact.type;
-            
-            const name = document.createElement('div');
-            name.className = 'card-name';
-            name.textContent = artifact.type;
-            
-            cardBack.appendChild(img);
-            cardBack.appendChild(name);
-            cardInner.appendChild(cardFront);
-            cardInner.appendChild(cardBack);
-            card.appendChild(cardInner);
-            
-            // Add halo for character artifacts
-            if (artifact.isCharacter) {
-                const halo = document.createElement('div');
-                halo.className = 'halo';
-                
-                if (artifact.star === '3 Star') {
-                    halo.classList.add('blue');
-                } else if (artifact.star === '4 Star') {
-                    halo.classList.add('purple');
-                } else if (artifact.star === '5 Star') {
-                    halo.classList.add('gold');
-                } else if (artifact.star === '6 Star') {
-                    halo.classList.add('red');
-                }
-                
-                card.appendChild(halo);
-            }
-            
-            return card;
-        }
-
-        // Update the UI with current state
-        function updateUI() {
-            totalOpensEl.textContent = state.totalOpens;
-            totalSpentEl.textContent = state.totalSpentCrystals.toLocaleString();
-            totalEssenceEl.textContent = state.totalSpentEssence.toLocaleString();
-            
-            // Update history list
-            historyList.innerHTML = '';
-            state.history.forEach((entry, index) => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-                historyItem.textContent = entry;
-                historyList.appendChild(historyItem);
-            });
         }
 
         // Clear history
         function clearHistory() {
-            state.history = [];
-            updateUI();
-            saveState();
+            if (confirm("Are you sure you want to clear ALL progress? This will reset:\n- Pull history\n- Pity counter\n- Total spent\n- Open counters\n\nThis cannot be undone.")) {
+                // Clear history
+                state.history = [];
+                elements.historyList.innerHTML = '';
+                
+                // Reset counters
+                state.pityCounter = 0;
+                state.totalOpens = 0;
+                state.totalGemsSpent = 0;
+                state.totalEssenceSpent = 0;
+                
+                // Reset collection
+                state.characterArtifacts.forEach(character => {
+                    state.collection[character] = 0;
+                });
+                
+                // Update UI
+                updateUI();
+                
+                // Save the cleared state
+                saveState();
+            }
         }
 
-        // Save state to localStorage
+        // Show collection
+        function showCollection() {
+            elements.collectionDisplay.innerHTML = '';
+            
+            state.characterArtifacts.forEach(character => {
+                const item = document.createElement('div');
+                item.className = `collection-item ${state.collection[character] ? '' : 'uncollected'}`;
+                
+                const img = document.createElement('img');
+                img.src = artifacts[character];
+                img.alt = character;
+                
+                const name = document.createElement('div');
+                name.className = 'collection-item-name';
+                name.textContent = character;
+                
+                item.appendChild(img);
+                item.appendChild(name);
+                
+                if (state.collection[character] > 0) {
+                    const count = document.createElement('div');
+                    count.textContent = `x${state.collection[character]}`;
+                    count.style.marginTop = '5px';
+                    item.appendChild(count);
+                }
+                
+                elements.collectionDisplay.appendChild(item);
+            });
+            
+            elements.collectionModal.style.display = 'block';
+        }
+
+        // Clear all timeouts
+        function clearTimeouts() {
+            state.flipTimeouts.forEach(timeout => clearTimeout(timeout));
+            state.flipTimeouts = [];
+        }
+
+        // Update UI
+        function updateUI(updateCounters = true) {
+            // Always update these counters
+            elements.totalOpensEl.textContent = state.totalOpens;
+            elements.totalGemsEl.textContent = state.totalGemsSpent.toLocaleString();
+            elements.totalEssenceEl.textContent = state.totalEssenceSpent.toLocaleString();
+            
+            // Only update these if requested (after pull completes)
+            if (updateCounters) {
+                elements.pityCounterEl.textContent = state.pityCounter;
+                
+                // Update collection count
+                const collectedCount = Object.values(state.collection).filter(count => count > 0).length;
+                elements.collectionCountEl.textContent = collectedCount;
+            }
+        }
+
+        // Save state
         function saveState() {
-            localStorage.setItem('artifactSimulatorState', JSON.stringify(state));
+            localStorage.setItem('artifactSimulatorState', JSON.stringify({
+                totalOpens: state.totalOpens,
+                pityCounter: state.pityCounter,
+                history: state.history,
+                collection: state.collection,
+                totalGemsSpent: state.totalGemsSpent,
+                totalEssenceSpent: state.totalEssenceSpent
+            }));
         }
 
-        // Load state from localStorage
+        // Load state
         function loadState() {
             const saved = localStorage.getItem('artifactSimulatorState');
             if (saved) {
                 try {
-                    const parsed = JSON.parse(saved);
-                    // Merge with default state to ensure all properties exist
-                    state = {
-                        ...state,
-                        ...parsed
-                    };
+                    const data = JSON.parse(saved);
+                    state.totalOpens = data.totalOpens || 0;
+                    state.pityCounter = data.pityCounter || 0;
+                    state.history = data.history || [];
+                    state.collection = data.collection || {};
+                    state.totalGemsSpent = data.totalGemsSpent || 0;
+                    state.totalEssenceSpent = data.totalEssenceSpent || 0;
+                    
+                    // Restore history display
+                    state.history.forEach(text => {
+                        const entry = document.createElement('div');
+                        entry.textContent = text;
+                        elements.historyList.appendChild(entry);
+                    });
+                    
+                    // Initialize any missing characters in collection
+                    state.characterArtifacts.forEach(character => {
+                        if (state.collection[character] === undefined) {
+                            state.collection[character] = 0;
+                        }
+                    });
                 } catch (e) {
-                    console.error('Failed to load state', e);
+                    console.error("Failed to load state", e);
                 }
             }
         }
 
-        // Initialize the game when the page loads
+        // Initialize when page loads
         window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
